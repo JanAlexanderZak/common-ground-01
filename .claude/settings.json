@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.prototypefund.de)",
+      "WebFetch(domain:prototypefund.de)"
+    ]
+  }
+}

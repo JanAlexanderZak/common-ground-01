@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+
+# uv / virtualenv
+.venv/
+.python-version-local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code (per-user overrides)
+.claude/settings.local.json
+
+# Editors (uncomment if you don't commit IDE settings)
+# .vscode/
+# .idea/
