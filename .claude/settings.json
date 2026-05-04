@@ -4,8 +4,10 @@
       "WebSearch",
       "WebFetch(domain:www.prototypefund.de)",
       "WebFetch(domain:prototypefund.de)",
-      "Bash(uv run *)",
-      "WebFetch(domain:wiki.prototypefund.de)"
+      "Bash(uv run *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\janal\\vscode_projects\\common_ground\\web"
     ]
   }
 }

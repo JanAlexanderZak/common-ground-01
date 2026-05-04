@@ -9,11 +9,13 @@
 
 ## Current status
 
-**Phase A weeks 1–2: complete.** 18 tests green; ruff + ty clean. Toolchain end-to-end: `parse_dir` reads a topic directory (frontmatter + statements + edges + metadata blocks), `to_json` emits JSON, `build.py` wraps both as a CLI. Format spec is committed at [`format/spec.md`](../format/spec.md) with a JSON schema at [`format/schema.json`](../format/schema.json). Three example topics in `examples/` conformance-tested. README has the user-facing summary.
+**Phase A weeks 1–5: code complete (visual verification pending).** Toolchain still 18 tests green; ruff + ty clean. The static-HTML web renderer is in place at [`web/`](../web/) — single-page React Flow app (no bundler) that fetches `topic.json` and renders L0–L4-styled nodes with dagre auto-layout. End-to-end pipeline: `build.py <topic> > web/topic.json` → `python -m http.server --directory web` → browser.
 
-**Open from Wks 1–2:** OSS license decision (LICENSE file pending). `validator/` and `serializer/` subpackages were originally scoped but deferred — they aren't blocking and the inline implementations are sufficient for v0.1.
+**Open from Wks 1–2:** OSS license decision (LICENSE file pending).
 
-**Next: Wks 3–5 — static HTML web renderer in `web/`.** Single `index.html` loading React Flow + a chart library from a CDN, reading the JSON emitted by `build.py`, rendering L0–L4 nodes with auto-layout and inline charts on `data_refs`. This is the visual deliverable that turns the toolchain into something a tester can look at.
+**Open from Wks 3–5:** **Visual verification is the user's responsibility** — I can't drive a browser from here. Run the pipeline above and confirm the graph renders. Also still pending: data-trace sparklines (the renderer shows the data_ref label but doesn't fetch and plot the CSV yet) and statement-detail side panel on click.
+
+**Next: Wks 6–9 — Schuldenbremse content + actor registry.** This is the research-heavy block: 30–60 hand-curated nodes about the Schuldenbremse fiscal arm, all L0/L1 sourced, ≥3 data traces (BIP, Schuldenquote, inflation), ~5 actors in `actors/`. Plus political-science contact reviews.
 
 ---
 
@@ -35,10 +37,13 @@
 - [~] `src/common_ground/validator/` — deferred to a later iteration (no current consumer needs it; format/schema.json + tests cover most of the same ground)
 
 ### Wks 3–5 — Static-HTML web renderer
-- [ ] `web/index.html` — React Flow + chart lib from CDN
-- [ ] L0–L4 custom node renderers
-- [ ] Inline sparkline for `Data:` references
-- [ ] Auto-layout (dagre / ELK)
+- [x] [`web/index.html`](../web/index.html) — import map for React/React Flow/dagre via esm.sh; Tailwind via play CDN
+- [x] [`web/main.js`](../web/main.js) — fetches `topic.json`; React Flow with custom `StatementNode` per layer; dagre auto-layout (rankdir TB)
+- [x] L0–L4 visual styling (slate/blue/orange/purple/red); relation-specific edge styles (`supports`/`attacks`/`evidence`/`qualifies`)
+- [ ] Inline sparkline for `Data:` references — deferred; node currently shows the data_ref label only. Needs CSV fetch + SVG path generation.
+- [x] Auto-layout via dagre
+- [x] [`web/README.md`](../web/README.md) — local dev instructions, layer legend, known limitations
+- [ ] Visual verification in browser — **user-driven** (no browser harness here)
 
 ### Wks 6–9 — Schuldenbremse content + actor registry
 - [ ] `actors/` populated with ~5 actors (Destatis, Bundesregierung, Bundestag, ifo-Institut, 1 AI agent)
@@ -86,7 +91,7 @@
 
 - [ ] OSS license (AGPL recommended) — week 1
 - [x] Markdown parser library — **marko** (locked in 2026-05-04)
-- [ ] Chart library (uPlot / Recharts / Chart.js) — week 3
+- [x] Chart library — **none** (locked in 2026-05-04). Phase A v1 renders no inline charts; sparklines for data refs are a follow-up. When added, custom inline SVG (no library) is the default; introduce a real chart library only if/when richer interactions are needed.
 - [ ] Hosting target (Cloudflare Pages recommended) — week 12
 - [ ] Editorial board contacts (≥2 by Sep 2026)
 - [ ] DebateLab/KIT outreach (by Jul 2026)
@@ -102,6 +107,7 @@ Most recent first.
 
 | Date | Block | Notes |
 |---|---|---|
+| 2026-05-04 | **Wks 3–5 web renderer** | Static SPA in [`web/`](../web/): `index.html` with an importmap pointing at esm.sh for React 18, `@xyflow/react` 12, `@dagrejs/dagre` 1, and `htm/react` (JSX-equivalent for a no-build setup); Tailwind via the play CDN. `main.js` fetches `./topic.json`, builds React Flow nodes/edges, runs dagre with `rankdir: "TB"` for top-down layout (policies above their supporting facts), and renders a custom `StatementNode` per layer with distinct colors (slate/blue/orange/purple/red). Edge styles per relation: solid green for `supports`, dashed red for `attacks`/`attacked-by`, solid blue for `evidence`, dotted purple for `qualifies`. End-to-end pipeline verified: `build.py examples/full > web/topic.json` produces a 1.3 KB JSON the renderer is wired to consume. **Visual verification is on the user** (no browser harness in this loop). Sparklines and the click-for-details panel deferred to follow-up iterations. |
 | 2026-05-04 | **Wks 1–2 wrap-up** | Wrote [`format/spec.md`](../format/spec.md) v0.1 distilling the working parser's behavior — directory layout, conventions for headings/edges/metadata blocks, citation/actor/data sub-formats, the lazy-continuation gotcha, and known limitations. Wrote [`format/schema.json`](../format/schema.json) — JSON Schema (draft 2020-12) describing the `to_json` output for downstream consumers. The `validator/` and `serializer/` subpackages originally scoped for Wks 1–2 are deferred: there's no current consumer for richer validation, and `serialize.py` covers the serialization need. 18 tests green; ruff + ty clean. **Phase A weeks 1–2 complete.** |
 | 2026-05-04 | build.py + serializer | Added `src/common_ground/serialize.py` with `to_json(graph, *, indent=2)` — uses `dataclasses.asdict` + `json.dumps(ensure_ascii=False)` so unicode (em-dashes, German umlauts) survives round-trip. `build.py` at project root is the 15-line CLI shim: takes a topic path, prints JSON to stdout. `uv run python build.py examples/full > full.json` works end-to-end. 18 tests green. The toolchain is now complete from `.md` files → JSON for any consumer (notably the web renderer that's coming next). |
 | 2026-05-04 | topic.md frontmatter | Added `TopicMetadata(topic, title, language, version, contributors, license, actors_registry)` model + `metadata` field on `TypedGraph` (default-factory empty, never None). PyYAML added as runtime dep. `parse_dir` now reads `<topic>/topic.md` if present: splits YAML frontmatter (between `---` delimiters) from body, then extracts the body's first H1 as `title`. Each example topic gained a `topic.md`. The `full` example's deep test now also asserts on metadata fields. 16 tests green. |

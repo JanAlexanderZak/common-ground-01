@@ -26,3 +26,7 @@ Thumbs.db
 # Editors (uncomment if you don't commit IDE settings)
 # .vscode/
 # .idea/
+
+# Web renderer build artifacts
+web/topic.json
+web/topic/

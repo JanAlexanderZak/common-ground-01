@@ -53,6 +53,18 @@ For the build pipeline the same is wrapped in a tiny CLI:
 uv run python build.py examples/full > public/full.json
 ```
 
+## Web renderer
+
+A static single-page renderer for any `topic.json` lives in [`web/`](web/). It loads React Flow + dagre + Tailwind from CDNs (no bundler) and visualizes the layered graph:
+
+```bash
+uv run python build.py examples/full > web/topic.json
+python -m http.server 8000 --directory web
+# Open http://localhost:8000
+```
+
+See [web/README.md](web/README.md) for layer / edge styling and known limitations.
+
 ## Format conventions
 
 The parser interprets standard Markdown by *convention*, not custom syntax. Every `.md` file remains valid Markdown that renders on GitHub.

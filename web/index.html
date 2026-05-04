@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Common Ground — Argument Graph</title>
+    <link
+      rel="stylesheet"
+      href="https://esm.sh/@xyflow/react@12/dist/style.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18",
+          "react-dom/client": "https://esm.sh/react-dom@18/client",
+          "@xyflow/react": "https://esm.sh/@xyflow/react@12?deps=react@18",
+          "@dagrejs/dagre": "https://esm.sh/@dagrejs/dagre@1",
+          "htm/react": "https://esm.sh/htm@3/react?deps=react@18"
+        }
+      }
+    </script>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
