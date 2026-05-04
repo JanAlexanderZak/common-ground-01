@@ -9,13 +9,24 @@
 
 ## Current status
 
-**Phase A weeks 1–5: code complete (visual verification pending).** Toolchain still 18 tests green; ruff + ty clean. The static-HTML web renderer is in place at [`web/`](../web/) — single-page React Flow app (no bundler) that fetches `topic.json` and renders L0–L4-styled nodes with dagre auto-layout. End-to-end pipeline: `build.py <topic> > web/topic.json` → `python -m http.server --directory web` → browser.
+**Phase A weeks 1–9: code + content complete (DRAFT, pending review).** 18 tests green; ruff + ty clean. End-to-end pipeline produces a 30-statement, 43-edge Schuldenbremse argument graph from `topics/schuldenbremse/` with zero unresolved cross-file references.
 
-**Open from Wks 1–2:** OSS license decision (LICENSE file pending).
+| Component | Status |
+|---|---|
+| Toolchain (`src/common_ground/`, `build.py`) | ✅ |
+| Format spec + JSON schema (`format/`) | ✅ |
+| Web renderer (`web/`) | ✅ code; visual verification still on user |
+| Schuldenbremse content (`topics/schuldenbremse/`) | ✅ DRAFT; 30 statements across L0–L4, 43 edges, 3 CSV data refs, 20 sourced statements |
+| Central actors registry (`actors/`) | ✅ DRAFT; 15 actors (institutions, parties, AI agent example) |
 
-**Open from Wks 3–5:** **Visual verification is the user's responsibility** — I can't drive a browser from here. Run the pipeline above and confirm the graph renders. Also still pending: data-trace sparklines (the renderer shows the data_ref label but doesn't fetch and plot the CSV yet) and statement-detail side panel on click.
+**Still open (user-driven, not blocking code):**
 
-**Next: Wks 6–9 — Schuldenbremse content + actor registry.** This is the research-heavy block: 30–60 hand-curated nodes about the Schuldenbremse fiscal arm, all L0/L1 sourced, ≥3 data traces (BIP, Schuldenquote, inflation), ~5 actors in `actors/`. Plus political-science contact reviews.
+- **OSS license** — LICENSE file decision (AGPL-3.0 recommended).
+- **Visual verification** of the renderer in a browser (see Wks 3–5 instructions).
+- **Editorial review** of Schuldenbremse content by a political-science contact — every L0/L1 number, source URL, and party position should be cross-checked. The 30 nodes include `[DRAFT — verify]` markers on uncertain sources (mostly the L2 mechanism citations, which point at journal landing pages rather than specific articles).
+- **Data verification** against Destatis / Bundesbank — `data/README.md` lists what to check.
+
+**Next: Wks 10–11 — trace-down UX + stance overlay** in the renderer. localStorage stance per statement (agree/disagree/uncertain), filter toggles (L0–L2 only / show all), and the "trace down" interaction: click a contested L4 policy and see which L1/L2/L3 nodes drive your disagreement.
 
 ---
 
@@ -46,15 +57,16 @@
 - [ ] Visual verification in browser — **user-driven** (no browser harness here)
 
 ### Wks 6–9 — Schuldenbremse content + actor registry
-- [ ] `actors/` populated with ~5 actors (Destatis, Bundesregierung, Bundestag, ifo-Institut, 1 AI agent)
-- [ ] `actors/README.md`, `actors/schema.md`
-- [ ] `topics/schuldenbremse/topic.md`
-- [ ] 30–60 statement nodes across L0–L4
-- [ ] All L0/L1 statements sourced
-- [ ] ≥3 data traces (BIP, Schuldenquote, inflation) committed as CSV
-- [ ] `topics/schuldenbremse/data/README.md`
-- [ ] `topics/schuldenbremse/sources/citations.md`
-- [ ] Political-science contact reviews
+- [x] [`actors/`](../actors/) populated with **15 actors** (institutions: Bundestag, Bundesregierung, Destatis, Bundesbank, ifo-Institut, DIW Berlin, Sachverständigenrat, KfW, Bundesverfassungsgericht; parties: CDU, SPD, Grüne, FDP, Linke; AI: Claude). Exceeded the original ~5 to support fuller political attribution.
+- [x] [`actors/README.md`](../actors/README.md) — registry overview + contribution policy
+- [~] `actors/schema.md` — covered by [`format/spec.md`](../format/spec.md) §7.2; no separate doc needed
+- [x] [`topics/schuldenbremse/topic.md`](../topics/schuldenbremse/topic.md) — frontmatter (de, AGPL-pending), DRAFT-marked
+- [x] **30 statement nodes** across L0–L4 (5 legal, 7 empirical, 8 mechanisms, 4 values, 6 policies); 43 edges; zero unresolved cross-file references
+- [x] All L0/L1 statements sourced — 20 of 30 statements have sources (all 12 L0/L1 plus 8 of the L2 mechanisms)
+- [x] **3 data traces** (`debt-to-gdp.csv`, `bip-wachstum.csv`, `inflation-hvpi.csv`) committed; values are draft, source-verified by spot check, **must be re-verified** before public release
+- [x] [`topics/schuldenbremse/data/README.md`](../topics/schuldenbremse/data/README.md) — DRAFT markers + verification sources for each CSV
+- [~] `topics/schuldenbremse/sources/citations.md` — citations are inline in statement metadata blocks; no separate file needed (the format spec example showed this as one possible layout but not required)
+- [ ] **Political-science contact reviews** — user task (see [docs/implementation_plan.md §10](implementation_plan.md) decision #5: ≥2 named editorial-board contacts by Sep 2026)
 
 ### Wks 10–11 — Trace-down UX + stance overlay
 - [ ] localStorage stance per statement
@@ -107,6 +119,7 @@ Most recent first.
 
 | Date | Block | Notes |
 |---|---|---|
+| 2026-05-04 | **Wks 6–9 Schuldenbremse content** | Dispatched 6 parallel general-purpose subagents per the user's request: 5 statement-file authors (one per layer-file) + 1 actor-registry author. Each agent received the full master ID list, actor list, format-spec pointer, and a per-file assignment with statement intents. Result: **30 statements, 43 edges, 0 unresolved cross-file references** in `topics/schuldenbremse/`, plus 15 actors in `actors/`. Verifying agents found and corrected drafted figures (Schuldenquote 2023 is 63.7% by Maastricht definition, not the 62.4% I had as placeholder; KfW Kommunalpanel reports 186 bn EUR investment backlog, not 166). Three CSV data traces (`debt-to-gdp.csv`, `bip-wachstum.csv`, `inflation-hvpi.csv`) committed with DRAFT markers. Also fixed a Windows-specific bug in `build.py`: `sys.stdout.reconfigure(encoding="utf-8")` is now needed so German content + em-dashes survive shell redirection on Windows (default cp1252 corrupts UTF-8 multibyte sequences). All work is DRAFT — content needs editorial review by a political-science contact before public release. 18 tests green; ruff + ty clean. |
 | 2026-05-04 | **Wks 3–5 web renderer** | Static SPA in [`web/`](../web/): `index.html` with an importmap pointing at esm.sh for React 18, `@xyflow/react` 12, `@dagrejs/dagre` 1, and `htm/react` (JSX-equivalent for a no-build setup); Tailwind via the play CDN. `main.js` fetches `./topic.json`, builds React Flow nodes/edges, runs dagre with `rankdir: "TB"` for top-down layout (policies above their supporting facts), and renders a custom `StatementNode` per layer with distinct colors (slate/blue/orange/purple/red). Edge styles per relation: solid green for `supports`, dashed red for `attacks`/`attacked-by`, solid blue for `evidence`, dotted purple for `qualifies`. End-to-end pipeline verified: `build.py examples/full > web/topic.json` produces a 1.3 KB JSON the renderer is wired to consume. **Visual verification is on the user** (no browser harness in this loop). Sparklines and the click-for-details panel deferred to follow-up iterations. |
 | 2026-05-04 | **Wks 1–2 wrap-up** | Wrote [`format/spec.md`](../format/spec.md) v0.1 distilling the working parser's behavior — directory layout, conventions for headings/edges/metadata blocks, citation/actor/data sub-formats, the lazy-continuation gotcha, and known limitations. Wrote [`format/schema.json`](../format/schema.json) — JSON Schema (draft 2020-12) describing the `to_json` output for downstream consumers. The `validator/` and `serializer/` subpackages originally scoped for Wks 1–2 are deferred: there's no current consumer for richer validation, and `serialize.py` covers the serialization need. 18 tests green; ruff + ty clean. **Phase A weeks 1–2 complete.** |
 | 2026-05-04 | build.py + serializer | Added `src/common_ground/serialize.py` with `to_json(graph, *, indent=2)` — uses `dataclasses.asdict` + `json.dumps(ensure_ascii=False)` so unicode (em-dashes, German umlauts) survives round-trip. `build.py` at project root is the 15-line CLI shim: takes a topic path, prints JSON to stdout. `uv run python build.py examples/full > full.json` works end-to-end. 18 tests green. The toolchain is now complete from `.md` files → JSON for any consumer (notably the web renderer that's coming next). |

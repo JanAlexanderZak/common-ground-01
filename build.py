@@ -14,6 +14,9 @@ def main(argv: list[str]) -> int:
         print(f"usage: {argv[0]} <topic-path>", file=sys.stderr)
         return 2
 
+    # Force UTF-8 on stdout so non-ASCII content (German umlauts, em-dashes)
+    # survives shell redirection on Windows, where the default is cp1252.
+    sys.stdout.reconfigure(encoding="utf-8")
     print(to_json(parse_dir(Path(argv[1]))))
     return 0
 
