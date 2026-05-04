@@ -45,9 +45,15 @@ Layout is computed by [dagre](https://github.com/dagrejs/dagre) with `rankdir: T
 - `main.js` — single ES module: fetches `./topic.json`, builds React Flow nodes/edges, runs dagre layout, renders with a custom `StatementNode` per layer.
 - `topic.json` — generated build artifact (gitignored). Run `build.py` to produce.
 
+## Interactions
+
+- **Click a node** — opens a side panel with the full statement, sources (with retrieval/source-type metadata), endorsing/disputing actors, data refs, and stance buttons.
+- **Stance buttons** in the side panel — agree / disagree / uncertain. Saved per-topic to localStorage (`cg-stances:<topic>`); a small icon appears on the node afterwards.
+- **Filter toggles** (top-right) — `All` / `L0–L2 only` (factual sub-graph) / `My disagreements` (only the nodes you've marked disagree).
+- **Trace down** (button at the bottom of the side panel) — fades all nodes outside the selected statement's reachable subgraph, so you can see *what an L4 policy actually depends on* at L2/L1/L0. Click another node to switch focus, click empty space to exit.
+
 ## Limitations (Phase A)
 
 - **Tailwind play CDN is not for production.** Fine for a demo/tester round; for deployment, swap to a real Tailwind build step.
-- **No data-trace sparklines yet.** Statements with `data_refs` show the label but don't fetch and render the underlying CSV. Coming in a follow-up.
-- **No statement-detail panel.** Clicking a node doesn't open a side panel yet — the in-node summary is what you get.
-- **No "trace down" UX yet.** That's Wks 10–11 work.
+- **No data-trace sparklines yet.** Statements with `data_refs` show the label and description in the side panel but don't yet fetch and plot the underlying CSV.
+- **No URL-state sync.** Selected statement and filter mode aren't reflected in the URL, so you can't share a deep link to a specific view.

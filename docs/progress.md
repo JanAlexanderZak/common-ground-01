@@ -26,7 +26,7 @@
 - **Editorial review** of Schuldenbremse content by a political-science contact — every L0/L1 number, source URL, and party position should be cross-checked. The 30 nodes include `[DRAFT — verify]` markers on uncertain sources (mostly the L2 mechanism citations, which point at journal landing pages rather than specific articles).
 - **Data verification** against Destatis / Bundesbank — `data/README.md` lists what to check.
 
-**Next: Wks 10–11 — trace-down UX + stance overlay** in the renderer. localStorage stance per statement (agree/disagree/uncertain), filter toggles (L0–L2 only / show all), and the "trace down" interaction: click a contested L4 policy and see which L1/L2/L3 nodes drive your disagreement.
+**Next: Wk 12 — static deployment.** GitHub Actions building `topic.json` on push and deploying `web/` to Cloudflare Pages (or Netlify). Then Wk 13 is the tester round (humans), and Wks 14–18 the application prep.
 
 ---
 
@@ -69,9 +69,12 @@
 - [ ] **Political-science contact reviews** — user task (see [docs/implementation_plan.md §10](implementation_plan.md) decision #5: ≥2 named editorial-board contacts by Sep 2026)
 
 ### Wks 10–11 — Trace-down UX + stance overlay
-- [ ] localStorage stance per statement
-- [ ] Filter toggles (L0–L2 only / show all)
-- [ ] Trace-down from L4 → driver L1/L2/L3
+- [x] localStorage stance per statement (agree / disagree / uncertain), persisted under `cg-stances:<topic>`
+- [x] Filter toggles: `All` / `L0–L2 only` / `My disagreements` (top-right panel)
+- [x] Trace-down: click node → side panel → "Trace down" button fades nodes outside the reachable subgraph (BFS over outgoing edges)
+- [x] **Bonus from Wks 3–5 backlog:** statement-detail side panel now exists (sources with retrieved/source-type, endorsed/disputed actor pills, data refs)
+- [x] Layer color legend in bottom-left
+- [ ] Visual verification in browser — **user-driven**
 
 ### Wk 12 — Static deployment
 - [ ] `.github/workflows/build.yml` — GitHub Actions
@@ -119,6 +122,7 @@ Most recent first.
 
 | Date | Block | Notes |
 |---|---|---|
+| 2026-05-04 | **Wks 10–11 trace-down + stance** | Rewrote `web/main.js` (170 → 470 lines) to add the killer-UX features: localStorage-backed stance per statement (agree/disagree/uncertain, persisted as `cg-stances:<topic>`), three filter modes (All / L0–L2 only / My disagreements), and the trace-down interaction (click a node → side panel; click "Trace down" → fades all nodes outside the reachable subgraph computed by BFS over outgoing edges). Also added the previously-deferred statement-detail side panel: full sources with retrieved/source-type, endorsed/disputed actor pills, data refs with descriptions. Plus a layer-color legend in the bottom-left. The new state machine is `selectedId` (driven by node click) + `traceMode` toggle + `filterMode` enum, all composed via `useMemo` into the React Flow nodes/edges so visual updates happen on a single re-render. Visual verification in browser is on the user. 22 tests green; ruff + ty clean. |
 | 2026-05-04 | **Wks 6–9 Schuldenbremse content** | Dispatched 6 parallel general-purpose subagents per the user's request: 5 statement-file authors (one per layer-file) + 1 actor-registry author. Each agent received the full master ID list, actor list, format-spec pointer, and a per-file assignment with statement intents. Result: **30 statements, 43 edges, 0 unresolved cross-file references** in `topics/schuldenbremse/`, plus 15 actors in `actors/`. Verifying agents found and corrected drafted figures (Schuldenquote 2023 is 63.7% by Maastricht definition, not the 62.4% I had as placeholder; KfW Kommunalpanel reports 186 bn EUR investment backlog, not 166). Three CSV data traces (`debt-to-gdp.csv`, `bip-wachstum.csv`, `inflation-hvpi.csv`) committed with DRAFT markers. Also fixed a Windows-specific bug in `build.py`: `sys.stdout.reconfigure(encoding="utf-8")` is now needed so German content + em-dashes survive shell redirection on Windows (default cp1252 corrupts UTF-8 multibyte sequences). All work is DRAFT — content needs editorial review by a political-science contact before public release. 18 tests green; ruff + ty clean. |
 | 2026-05-04 | **Wks 3–5 web renderer** | Static SPA in [`web/`](../web/): `index.html` with an importmap pointing at esm.sh for React 18, `@xyflow/react` 12, `@dagrejs/dagre` 1, and `htm/react` (JSX-equivalent for a no-build setup); Tailwind via the play CDN. `main.js` fetches `./topic.json`, builds React Flow nodes/edges, runs dagre with `rankdir: "TB"` for top-down layout (policies above their supporting facts), and renders a custom `StatementNode` per layer with distinct colors (slate/blue/orange/purple/red). Edge styles per relation: solid green for `supports`, dashed red for `attacks`/`attacked-by`, solid blue for `evidence`, dotted purple for `qualifies`. End-to-end pipeline verified: `build.py examples/full > web/topic.json` produces a 1.3 KB JSON the renderer is wired to consume. **Visual verification is on the user** (no browser harness in this loop). Sparklines and the click-for-details panel deferred to follow-up iterations. |
 | 2026-05-04 | **Wks 1–2 wrap-up** | Wrote [`format/spec.md`](../format/spec.md) v0.1 distilling the working parser's behavior — directory layout, conventions for headings/edges/metadata blocks, citation/actor/data sub-formats, the lazy-continuation gotcha, and known limitations. Wrote [`format/schema.json`](../format/schema.json) — JSON Schema (draft 2020-12) describing the `to_json` output for downstream consumers. The `validator/` and `serializer/` subpackages originally scoped for Wks 1–2 are deferred: there's no current consumer for richer validation, and `serialize.py` covers the serialization need. 18 tests green; ruff + ty clean. **Phase A weeks 1–2 complete.** |
