@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.prototypefund.de)",
-      "WebFetch(domain:prototypefund.de)"
+      "WebFetch(domain:prototypefund.de)",
+      "Bash(uv run *)",
+      "WebFetch(domain:wiki.prototypefund.de)"
     ]
   }
 }
