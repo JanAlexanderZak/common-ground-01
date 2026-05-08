@@ -10,11 +10,11 @@ From the **project root**:
 # 1. Generate a topic.json from one of the example topics or a real topic.
 #    Pass the output path as a 2nd argument (don't use shell redirection —
 #    PowerShell's `>` re-encodes to UTF-16-LE-with-BOM and breaks JSON.parse).
-uv run python build.py topics/schuldenbremse web/topic.json
+uv run python build.py src/topics/schuldenbremse src/web/topic.json
 
-# 2. Serve web/ over HTTP. (Opening index.html via file:// won't work because
+# 2. Serve src/web/ over HTTP. (Opening index.html via file:// won't work because
 #    the page fetches topic.json, and browsers block fetch() over file://.)
-python -m http.server 8000 --directory web
+python -m http.server 8000 --directory src/web
 ```
 
 Then open <http://localhost:8000>.

@@ -116,16 +116,16 @@ def test_does_not_check_data_when_no_topic_dir_given():
 
 
 def test_full_example_validates_clean():
-    topic_dir = ROOT / "examples" / "full"
+    topic_dir = Path(__file__).parent / "fixtures" / "full"
     graph = parse_dir(topic_dir)
     issues = validate_graph(graph, topic_dir=topic_dir)
     assert issues == [], "\n".join(f"{i.kind}: {i.detail}" for i in issues)
 
 
 def test_schuldenbremse_validates_clean():
-    topic_dir = ROOT / "topics" / "schuldenbremse"
+    topic_dir = ROOT / "src" / "topics" / "schuldenbremse"
     graph = parse_dir(topic_dir)
     issues = validate_graph(
-        graph, actors_dir=ROOT / "actors", topic_dir=topic_dir
+        graph, actors_dir=ROOT / "src" / "actors", topic_dir=topic_dir
     )
     assert issues == [], "\n".join(f"{i.kind}: {i.detail}" for i in issues)

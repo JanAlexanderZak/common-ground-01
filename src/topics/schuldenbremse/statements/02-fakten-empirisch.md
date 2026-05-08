@@ -42,7 +42,6 @@
 > - jurisdiction: DE
 >
 > **Endorsed by:** @bundesregierung
-> **Disputed by:** @gruene, @linke
 
 - **evidence:** f-investitionsstau
 
@@ -54,7 +53,6 @@
 > - jurisdiction: DE
 >
 > **Endorsed by:** @bundesregierung, @bundestag
-> **Disputed by:** @spd, @gruene
 
 ## L1 — Stilisierte Fakten
 
@@ -66,7 +64,6 @@
 > - jurisdiction: DE
 >
 > **Endorsed by:** @kfw, @diw-berlin
-> **Disputed by:** @fdp
 
 ### f-zinswende: Seit Juli 2022 hat die EZB ihre Leitzinsen in mehreren Schritten kräftig angehoben und damit das jahrelange Niedrig- bzw. Negativzinsumfeld beendet — mit unmittelbaren Folgen für die Refinanzierungskosten des Bundes.
 

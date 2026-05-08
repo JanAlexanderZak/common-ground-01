@@ -4,7 +4,7 @@ import pytest
 
 from common_ground import parse_dir
 
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+EXAMPLES_DIR = Path(__file__).parent / "fixtures"
 
 EXAMPLE_EXPECTATIONS = {
     "minimal": {"statements": 1, "edges": 0},

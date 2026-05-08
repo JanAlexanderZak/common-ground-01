@@ -3,7 +3,7 @@ from pathlib import Path
 
 from common_ground import parse_dir, to_json
 
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+EXAMPLES_DIR = Path(__file__).parent / "fixtures"
 
 
 def test_to_json_round_trips_full_example():

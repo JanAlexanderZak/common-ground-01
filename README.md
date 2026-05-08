@@ -50,22 +50,22 @@ print(to_json(graph))
 For the build pipeline the same is wrapped in a tiny CLI:
 
 ```bash
-uv run python build.py examples/full public/full.json
+uv run python build.py src/topics/schuldenbremse public/schuldenbremse.json
 ```
 
 (Pass the output path as a positional argument; do not use `>` redirection — PowerShell's `>` re-encodes to UTF-16-LE-with-BOM, which breaks downstream JSON parsers.)
 
 ## Web renderer
 
-A static single-page renderer for any `topic.json` lives in [`web/`](web/). It loads React Flow + dagre + Tailwind from CDNs (no bundler) and visualizes the layered graph:
+A static single-page renderer for any `topic.json` lives in [`src/web/`](src/web/). It loads React Flow + dagre + Tailwind from CDNs (no bundler) and visualizes the layered graph:
 
 ```bash
-uv run python build.py examples/full web/topic.json
-python -m http.server 8000 --directory web
+uv run python build.py src/topics/schuldenbremse src/web/topic.json
+python -m http.server 8000 --directory src/web
 # Open http://localhost:8000
 ```
 
-See [web/README.md](web/README.md) for layer / edge styling and known limitations.
+See [src/web/README.md](src/web/README.md) for layer / edge styling and known limitations.
 
 ## Format conventions
 
@@ -138,4 +138,4 @@ uv run ty check            # type-check
 
 Code: **AGPL-3.0-or-later** — see [LICENSE](LICENSE).
 
-Reference content under [topics/](topics/) carries its own per-topic license declared in each `topic.md`'s frontmatter (e.g. `CC-BY-SA-4.0` for the Schuldenbremse topic). The actor profiles under [actors/](actors/) and the format specification under [format/](format/) are AGPL-3.0-or-later along with the code.
+Reference content under [src/topics/](src/topics/) carries its own per-topic license declared in each `topic.md`'s frontmatter (e.g. `CC-BY-SA-4.0` for the Schuldenbremse topic). The actor profiles under [src/actors/](src/actors/) and the format specification under [src/format/](src/format/) are AGPL-3.0-or-later along with the code.

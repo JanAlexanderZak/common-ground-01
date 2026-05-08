@@ -26,11 +26,11 @@ jobs:
       - run: uv run ruff check
       - run: uv run ty check
       - run: uv run pytest
-      - run: uv run python build.py topics/schuldenbremse web/topic.json
+      - run: uv run python build.py src/topics/schuldenbremse src/web/topic.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: web/
+          path: src/web/
 
   deploy:
     needs: build

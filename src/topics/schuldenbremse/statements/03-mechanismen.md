@@ -3,7 +3,7 @@
 Acht L2-Statements zu den ökonomischen Wirkungsmechanismen, die in der Debatte
 um die Schuldenbremse herangezogen werden. Mechanismen sind theoretische bzw.
 empirisch umstrittene Kausalzusammenhänge — Endorsements und Disputes spiegeln
-deshalb klassische ökonomische Schulen sowie Parteipositionen wider. Quellen
+deshalb klassische ökonomische Schulen wider. Quellen
 sind, soweit verfügbar, auf Fachveröffentlichungen von DIW, ifo, SVR und
 Bundesbank gestützt; nicht-verifizierte URLs sind als `[DRAFT — verify]`
 markiert.
@@ -17,7 +17,7 @@ markiert.
 > - source-type: expert-report
 > - jurisdiction: DE
 >
-> **Endorsed by:** @ifo-institut, @bundesbank, @cdu
+> **Endorsed by:** @ifo-institut, @bundesbank
 > **Disputed by:** @diw-berlin
 
 - **evidence:** f-zinswende
@@ -29,7 +29,7 @@ markiert.
 > - source-type: peer-reviewed
 > - jurisdiction: DE
 >
-> **Endorsed by:** @diw-berlin, @kfw, @spd, @gruene
+> **Endorsed by:** @diw-berlin, @kfw
 > **Disputed by:** @ifo-institut
 
 - **evidence:** f-investitionsstau, f-investitionen-bund
@@ -41,7 +41,7 @@ markiert.
 > - source-type: peer-reviewed
 > - jurisdiction: DE
 >
-> **Endorsed by:** @diw-berlin, @gruene, @spd, @linke
+> **Endorsed by:** @diw-berlin
 > **Disputed by:** @ifo-institut
 
 - **evidence:** f-bipwachstum-2023
@@ -65,7 +65,7 @@ markiert.
 > - source-type: expert-report
 > - jurisdiction: DE
 >
-> **Endorsed by:** @ifo-institut, @sachverstandigenrat, @bundesbank, @cdu, @fdp
+> **Endorsed by:** @ifo-institut, @sachverstandigenrat, @bundesbank
 
 - **evidence:** f-schuldenquote-2023
 
@@ -76,7 +76,7 @@ markiert.
 > - source-type: expert-report
 > - jurisdiction: DE
 >
-> **Endorsed by:** @ifo-institut, @bundesbank, @cdu
+> **Endorsed by:** @ifo-institut, @bundesbank
 
 - **evidence:** f-zinswende
 
@@ -98,7 +98,7 @@ markiert.
 > - source-type: peer-reviewed
 > - jurisdiction: DE
 >
-> **Endorsed by:** @diw-berlin, @spd, @gruene
-> **Disputed by:** @ifo-institut, @cdu
+> **Endorsed by:** @diw-berlin
+> **Disputed by:** @ifo-institut
 
 - **evidence:** f-investitionsstau

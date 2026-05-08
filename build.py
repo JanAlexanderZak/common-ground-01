@@ -7,9 +7,9 @@ If <output-path> is given, the JSON is written to that file as UTF-8
 Windows — PowerShell's `>` redirect re-encodes stdout to UTF-16-LE-
 with-BOM, which downstream JSON parsers reject.
 
-Reference resolution is checked against the in-repo `actors/` registry
-(if present) and against `<topic>/data/` for data references. Any
-unresolved references print to stderr and the script exits non-zero.
+Reference resolution is checked against the in-repo `src/actors/`
+registry (if present) and against `<topic>/data/` for data references.
+Any unresolved references print to stderr and the script exits non-zero.
 """
 
 import sys
@@ -18,8 +18,8 @@ from pathlib import Path
 from common_ground import parse_dir, to_json, validate_graph
 
 REPO_ROOT = Path(__file__).resolve().parent
-ACTORS_DIR = REPO_ROOT / "actors"
-TOPICS_DIR = REPO_ROOT / "topics"
+ACTORS_DIR = REPO_ROOT / "src" / "actors"
+TOPICS_DIR = REPO_ROOT / "src" / "topics"
 
 
 def _resolve_actors_dir(topic_path: Path) -> Path | None:

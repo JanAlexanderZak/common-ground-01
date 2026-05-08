@@ -15,7 +15,6 @@ Rechtsprechung des Bundesverfassungsgerichts.
 > - jurisdiction: DE
 >
 > **Endorsed by:** @bundestag, @bundesverfassungsgericht
-> **Disputed by:** @linke
 
 ### f-art115: Art. 115 Abs. 2 GG konkretisiert die Schuldenregel durch Konjunkturkomponente und Kontrollkonto und wird durch das Artikel-115-Gesetz ausgeführt.
 
@@ -25,7 +24,6 @@ Rechtsprechung des Bundesverfassungsgerichts.
 > - jurisdiction: DE
 >
 > **Endorsed by:** @bundestag, @bundesverfassungsgericht
-> **Disputed by:** @linke
 
 ### f-notlage: Art. 109 Abs. 3 Satz 2 GG erlaubt eine Überschreitung der Defizitgrenze in außergewöhnlichen Notlagen mit einfacher Bundestagsmehrheit und verbindlichem Tilgungsplan.
 
@@ -43,8 +41,7 @@ Rechtsprechung des Bundesverfassungsgerichts.
 > - source-type: legal-text
 > - jurisdiction: DE
 >
-> **Endorsed by:** @bundesverfassungsgericht, @cdu, @fdp
-> **Disputed by:** @linke
+> **Endorsed by:** @bundesverfassungsgericht
 
 ### f-konjunktur-komponente: Die Konjunkturkomponente nach Art. 115 GG erlaubt eine konjunkturbereinigte Defizitgrenze auf Basis der Output-Lücke; in Rezessionen sind höhere strukturelle Defizite zulässig, in Boomphasen muss zusätzlich gespart werden.
 

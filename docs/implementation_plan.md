@@ -71,8 +71,7 @@ common_ground/                   <- single repo (project root)
 │   ├── bundesregierung.md
 │   ├── bundestag.md
 │   ├── ifo-institut.md
-│   ├── cdu-2025.md
-│   ├── spd-2025.md
+│   ├── diw-berlin.md
 │   ├── claude.md
 │   ├── gpt-5.md
 │   ├── README.md                <- contribution guide, vetting policy
@@ -128,7 +127,7 @@ Topics reference actors by ID (`@destatis`). The parser resolves actor IDs again
 2. **Diff-friendly** — line-oriented; small edits → small diffs (the GitHub-PR contribution model depends on this).
 3. **Layered** — L0–L4 is encoded structurally (heading levels), not as a tag.
 4. **Provenance-first** — sources for L0/L1 are required and structured (URL, source-type, retrieval, jurisdiction).
-5. **Institutionally attributed** — statements can be endorsed/disputed by *actors* with stable IDs (`@destatis`, `@bundesregierung`, `@cdu-2025`, `@claude`). Actors are defined centrally, in the project's `actors/` directory (single source of truth across all topics).
+5. **Institutionally attributed** — statements can be endorsed/disputed by *actors* with stable IDs (`@destatis`, `@bundesregierung`, `@ifo-institut`, `@claude`). Actors are defined centrally, in the project's `actors/` directory (single source of truth across all topics).
 6. **Evidence-grounded** — numerical L0/L1 claims can reference versioned datasets in `data/*.csv`; the renderer shows inline charts.
 7. **Composable** — a topic spans multiple files; references resolve by ID across files and across repos (statements within topic; actors against the central registry).
 8. **Convention-not-extension** — the parser doesn't define new Markdown syntax; it imposes meaning on existing constructs.
@@ -251,8 +250,8 @@ The web component reads the CSV at build time and renders an inline sparkline / 
 
 ### p1: Reform der Schuldenbremse, um 1,0% Defizit für Investitionen zu erlauben
 
-> **Endorsed by:** @spd-2025, @grüne-2025
-> **Disputed by:** @cdu-2025, @fdp-2025
+> **Endorsed by:** @diw-berlin, @kfw
+> **Disputed by:** @ifo-institut, @bundesbank
 
 - **supports:** c1, v3
 - **attacked-by:** p2

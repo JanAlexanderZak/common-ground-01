@@ -2,7 +2,7 @@ from pathlib import Path
 
 from common_ground import parse_dir
 
-TOPICS_DIR = Path(__file__).parent.parent / "topics"
+TOPICS_DIR = Path(__file__).parent.parent / "src" / "topics"
 
 
 def test_schuldenbremse_parses_cleanly():

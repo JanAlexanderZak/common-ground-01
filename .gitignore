@@ -34,5 +34,5 @@ Thumbs.db
 # .idea/
 
 # Web renderer build artifacts
-web/topic.json
-web/topic/
+src/web/topic.json
+src/web/topic/

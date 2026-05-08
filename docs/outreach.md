@@ -19,13 +19,13 @@ Hi [Name],
 
 I'm reaching out because I'm building `common_ground`, an open-source toolchain for typed, layered argument graphs in Markdown, and I'm putting together a small editorial board before submitting to the **Prototype Fund Class 03** (Software Infrastructure pillar; application window October–November 2026; project start June 2027).
 
-The reference deployment maps the fiscal arm of the German **Schuldenbremse** debate as a 30-statement L0–L4 graph: empirical facts (Schuldenquote, BIP-Wachstum, HVPI), causal mechanisms, value commitments, party-attributed policy positions. Every L0/L1 statement is sourced; every claim is attributed to actors with stable IDs (`@bundestag`, `@destatis`, `@cdu`, `@spd`, …). The format is Markdown — no DSL, no new file extension — and renders sensibly on GitHub.
+The reference deployment maps the fiscal arm of the German **Schuldenbremse** debate as a 30-statement L0–L4 graph: empirical facts (Schuldenquote, BIP-Wachstum, HVPI), causal mechanisms, value commitments, institutionally-attributed policy positions. Every L0/L1 statement is sourced; every claim is attributed to actors with stable IDs (`@bundestag`, `@destatis`, `@ifo-institut`, `@diw-berlin`, …). The format is Markdown — no DSL, no new file extension — and renders sensibly on GitHub.
 
 The funded artifact is the **toolchain** (format spec, Python library, web component, central actor registry, VS Code extension, Argdown interoperability), not a deliberation website. The Schuldenbremse demo is the use case that proves the format. Software-infrastructure framing matters because the Prototype Fund discontinued its Civic Tech pillar in 2025.
 
 What I'd ask of you, in priority order:
 
-1. **Editorial review of the Schuldenbremse content** (1–2 hours, asynchronous, anytime in the next ~12 weeks): does the L0–L4 layering hold up; are the L0/L1 numbers verifiable against their sources; are the L4 policy positions accurately attributed to parties as of the current Bundestag period? The repo's `[DRAFT — verify]` markers are the working list.
+1. **Editorial review of the Schuldenbremse content** (1–2 hours, asynchronous, anytime in the next ~12 weeks): does the L0–L4 layering hold up; are the L0/L1 numbers verifiable against their sources; are the L4 policy positions accurately attributed to the relevant institutions and experts? The repo's `[DRAFT — verify]` markers are the working list.
 
 2. **A short letter of support** (~½ page) addressed to the Prototype Fund jury, describing your reaction to the format and the curation discipline. This is high-leverage for the application's "feasibility + editorial board" point. I can send a one-paragraph template.
 
