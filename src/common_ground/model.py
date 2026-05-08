@@ -38,7 +38,7 @@ class DataRef:
 
 @dataclass
 class Statement:
-    """A node in the layered argument graph: an id, a layer, claim text, plus its sources, endorsements, disputes, and data refs."""
+    """A node: id + layer + claim text, with its sources, endorsements, disputes, and data refs."""
 
     id: str
     layer: int

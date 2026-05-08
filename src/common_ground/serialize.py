@@ -43,7 +43,7 @@ def _upstream_by_id(
 
 
 def _edge_pairs(edges: list[Edge]) -> list[dict[str, Any]]:
-    """Deduplicate to one entry per unordered (a,b) pair, flagging mutual edges with the inverse relation."""
+    """Deduplicate to one entry per unordered (a,b) pair; flag mutual edges with inverseRelation."""
     by_directed: dict[tuple[str, str], str] = {
         (e.source, e.target): e.relation for e in edges
     }

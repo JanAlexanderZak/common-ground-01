@@ -53,7 +53,7 @@ def _inline_text(node: Any) -> str:
 
 
 def _parse_edge_item(item: Any) -> tuple[str, list[str]] | None:
-    """Parse a `**relation:** target1, target2` list item into (relation, [targets]); return None if it doesn't match."""
+    """Parse a `**relation:** target1, ...` list item into (relation, [targets]) or None."""
     if not item.children:
         return None
     block = item.children[0]
@@ -135,7 +135,7 @@ def _build_data_ref(inline_value: list[Any]) -> DataRef | None:
 
 
 def _split_paragraph_fields(inlines: list[Any]) -> list[tuple[str, list[Any]]]:
-    """Split a paragraph's inlines on bold (`**Label:**`) markers into (label, value-inlines) pairs."""
+    """Split a paragraph's inlines on bold (`**Label:**`) markers into (label, inlines) pairs."""
     fields: list[tuple[str, list[Any]]] = []
     current_label: str | None = None
     current_value: list[Any] = []
@@ -156,7 +156,7 @@ def _split_paragraph_fields(inlines: list[Any]) -> list[tuple[str, list[Any]]]:
 
 
 def _parse_metadata_block(quote: Quote, statement: Statement) -> None:
-    """Walk a blockquote and attach its citation / endorsement / dispute / data-ref fields to `statement`.
+    """Attach a blockquote's citation / endorsement / dispute / data-ref fields to `statement`.
 
     A trailing sub-list is treated as detail for the last bold field of the
     preceding paragraph.
@@ -198,7 +198,7 @@ _FRONTMATTER_DELIMITER = "---"
 
 
 def _split_frontmatter(content: str) -> tuple[str, str]:
-    """Separate a leading `---`-delimited YAML frontmatter block from the rest of the Markdown body."""
+    """Separate a leading `---`-delimited YAML frontmatter from the rest of the Markdown body."""
     lines = content.splitlines(keepends=False)
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return "", content

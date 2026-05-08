@@ -1,4 +1,4 @@
-"""Structural checks on a parsed `TypedGraph` (dangling edges, unknown actors, missing data files)."""
+"""Structural checks on a `TypedGraph` (dangling edges, unknown actors, missing data files)."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -103,7 +103,10 @@ def _check_data_refs(graph: TypedGraph, topic_dir: Path) -> list[Issue]:
 
 
 def _data_ref_resolves(ref_path: str, topic_dir: Path) -> bool:
-    """Return True if `ref_path` resolves under any of the supported locations: `<topic>/statements/<ref>`, `<topic>/<ref>`, or `<topic>/data/<basename>`."""
+    """Return True if `ref_path` resolves under any supported location.
+
+    Supported: `<topic>/statements/<ref>`, `<topic>/<ref>`, or `<topic>/data/<basename>`.
+    """
     # Statements typically live in <topic>/statements/, so a ref like
     # "../data/x.csv" resolves to <topic>/data/x.csv. Also accept refs
     # written relative to <topic> directly, and bare-name refs against
