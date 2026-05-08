@@ -3,7 +3,16 @@ name = "common-ground"
 version = "0.1.0"
 description = "Markdown-based toolchain for typed, layered argument graphs"
 readme = "README.md"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
 dependencies = [
     "marko>=2.2.2",
     "pyyaml>=6.0.3",
@@ -11,7 +20,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "jsonschema>=4.26.0",
     "pytest>=8.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.8",
     "ty>=0.0.1a16",
 ]
@@ -25,6 +36,15 @@ packages = ["src/common_ground"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = [
+    "--cov=common_ground",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
+]
+
+[tool.coverage.run]
+source = ["src/common_ground"]
+branch = true
 
 [tool.ruff]
 target-version = "py312"

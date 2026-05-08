@@ -7,7 +7,7 @@ import {
   MiniMap,
   Panel,
 } from "@xyflow/react";
-import dagre from "@dagrejs/dagre";
+import * as dagre from "@dagrejs/dagre";
 import { html } from "htm/react";
 
 const LAYER_NAMES = {
@@ -522,7 +522,7 @@ function App() {
         <div class="text-sm mt-4 text-gray-700">
           Run
           <code class="bg-gray-100 px-1"
-            >uv run python build.py &lt;topic-path&gt; > web/topic.json</code
+            >uv run python build.py &lt;topic-path&gt; web/topic.json</code
           >
           from the project root, then serve
           <code class="bg-gray-100 px-1">web/</code> via

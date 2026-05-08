@@ -50,15 +50,17 @@ print(to_json(graph))
 For the build pipeline the same is wrapped in a tiny CLI:
 
 ```bash
-uv run python build.py examples/full > public/full.json
+uv run python build.py examples/full public/full.json
 ```
+
+(Pass the output path as a positional argument; do not use `>` redirection — PowerShell's `>` re-encodes to UTF-16-LE-with-BOM, which breaks downstream JSON parsers.)
 
 ## Web renderer
 
 A static single-page renderer for any `topic.json` lives in [`web/`](web/). It loads React Flow + dagre + Tailwind from CDNs (no bundler) and visualizes the layered graph:
 
 ```bash
-uv run python build.py examples/full > web/topic.json
+uv run python build.py examples/full web/topic.json
 python -m http.server 8000 --directory web
 # Open http://localhost:8000
 ```
@@ -124,10 +126,16 @@ Requires [uv](https://docs.astral.sh/uv/) and Python 3.12 (uv will install Pytho
 
 ```bash
 uv sync                    # create .venv and install locked deps
-uv run pytest              # run the test suite
+uv run pytest              # run the test suite (coverage gate ≥80%)
 uv run python              # drop into a REPL with the project env
 uv run ruff check          # lint
 uv run ruff check --fix    # lint + autofix
 uv run ruff format         # format
 uv run ty check            # type-check
 ```
+
+## License
+
+Code: **AGPL-3.0-or-later** — see [LICENSE](LICENSE).
+
+Reference content under [topics/](topics/) carries its own per-topic license declared in each `topic.md`'s frontmatter (e.g. `CC-BY-SA-4.0` for the Schuldenbremse topic). The actor profiles under [actors/](actors/) and the format specification under [format/](format/) are AGPL-3.0-or-later along with the code.

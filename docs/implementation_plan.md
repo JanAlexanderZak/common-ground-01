@@ -279,8 +279,9 @@ Curated content scope: **30–60 nodes, one sub-topic** (fiscal arm of Schuldenb
 | 3–5 | Static-HTML web renderer with chart support | One `index.html` loading React + React Flow + a small chart library (uPlot or Recharts) from a CDN; reads `topic.json`; custom L0–L4 nodes; inline sparkline for nodes with `Data:` references; auto-layout (dagre/ELK) |
 | 6–9 | Schuldenbremse content + bootstrap actor registry | 30–60 nodes under `topics/schuldenbremse/`, fiscal arm; all L0/L1 sourced; ≥3 data traces (BIP, Schuldenquote, inflation) committed as CSV; `actors/` populated with ~5 actors (Destatis, Bundesregierung, Bundestag, ifo-Institut, plus 1 AI-agent example); political-science contact reviews |
 | 10–11 | Trace-down UX + stance overlay | localStorage stance per statement; filter toggles (L0–L2 only / show all); trace-down from L4 → driver L1/L2/L3 |
-| 12 | Static deployment | `git push` to Cloudflare Pages or Netlify (recommended over Hetzner for static-only Phase A); HTTPS; OG tags; Plausible Analytics; GitHub Actions builds the JSON from topic markdown on every push |
-| 13 | Tester round | 10–20 testers; questions: "Can you locate the *layer* where you disagree?" + "Do the data traces help you trust the L0 claims?"; iterate |
+| 12-prep | Wks 1–2 carry-over fixes | `src/common_ground/validator.py` (statement-id, actor-id, data-path resolution; wired into `build.py`); `tests/test_schema_conformance.py` (every example + Schuldenbremse round-tripped through `format/schema.json`); `pytest-cov` ≥80% threshold in `pyproject.toml`; `LICENSE` (AGPL-3.0). ~2–3 working days |
+| 12 | Static deployment to GitHub Pages | `git push` to `main` triggers a GitHub Actions workflow (`.github/workflows/deploy.yml`) that runs `build.py topics/schuldenbremse web/topic.json` and publishes `web/` via `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4`. Public URL `https://<user>.github.io/common_ground/`. HTTPS automatic; OG tags in `web/index.html`; Plausible Analytics. Custom domain (`common-ground.de`) deferred — add via CNAME post-launch only if needed |
+| 13 | Informal walkthroughs | 3–5 informal walkthroughs (replaces the original 10–20 tester round). Same questions: "Can you locate the *layer* where you disagree?" + "Do the data traces help you trust the L0 claims?"; iterate. Formal political-spectrum-balanced survey deferred unless walkthroughs surface comprehensibility issues |
 | 14–18 | Application prep | 3 × 2,000-char DE summaries (drafted iteratively over 5 weeks); Vorhabenbeschreibung (12-point); editorial-board commitments confirmed in writing; OSS license chosen and applied; 5% own contribution evidenced; outreach to DebateLab/KIT sent; submit Oct/Nov 2026 |
 
 ### Phase A deliverable
@@ -385,7 +386,7 @@ If 1–4 fail at week 11, re-scope to fewer nodes (target 20). If 6 fails (teste
 1. **OSS license.** AGPL vs. MIT/Apache. AGPL recommended for public-interest signaling; switch only if an integration target demands it.
 2. **Markdown parser choice for `common_ground`.** marko vs. markdown-it-py vs. mistune — decide in Phase A week 1; all three are viable.
 3. **Chart library for `common-ground-web`.** uPlot (smallest), Recharts (most features), Chart.js (most familiar) — decide in Phase A week 3.
-4. **Hosting for the reference deployment.** Cloudflare Pages (recommended; free, GitHub-integrated, zero-ops) vs. Netlify (similar) vs. Hetzner (control, but unnecessary for static).
+4. **Hosting for the reference deployment.** *Resolved 2026-05-05* → **GitHub Pages** via `actions/deploy-pages@v4`. Single-platform (everything in GitHub already); no third-party signup; free; HTTPS automatic. Cloudflare Pages and Netlify were rejected as a needless second-vendor dependency for a static-only Phase A. Custom domain `common-ground.de` deferred until adoption justifies it (CNAME file is a 5-minute add).
 5. **Editorial board.** ≥2 named contacts (political-science academic + journalist or civic-tech practitioner) committed in writing before Sep 2026.
 6. **DebateLab/KIT outreach.** Email by Jul 2026; goal: at minimum public acknowledgment, ideally a letter of support.
 7. **Freiberufler status.** Confirm or initiate registration immediately — multi-week lead time.
@@ -423,8 +424,15 @@ All paths below are relative to the project root at [..](..) .
 - `topics/schuldenbremse/data/{debt-to-gdp,inflation-hvpi,gdp-growth}.csv`, `topics/schuldenbremse/data/README.md`
 - `topics/schuldenbremse/sources/citations.md`
 
+**Phase A week-12 prep (carry-over fixes):**
+- `LICENSE` — AGPL-3.0 at repo root; corresponding update to `pyproject.toml` `[project] license`, `README.md`, and `topics/schuldenbremse/topic.md` frontmatter
+- `src/common_ground/validator.py` — `validate_graph(graph, *, actors_dir, topic_dir)` returning a list of `Issue(severity, kind, detail)`; checks edge-target resolution, actor-ID resolution against `actors/`, and data-path existence; wired into `build.py` with non-zero exit on errors
+- `tests/test_validator.py` — happy + sad paths
+- `tests/test_schema_conformance.py` — every example + `topics/schuldenbremse` round-tripped through `format/schema.json` via `jsonschema`; catches parser/schema drift
+- `pyproject.toml` — `pytest-cov` in dev deps; `addopts = ["--cov=common_ground", "--cov-fail-under=80"]`
+
 **Phase A week 12 (deployment):**
-- `.github/workflows/build.yml` — GitHub Actions config: on push, run `build.py`, deploy `web/` + generated `topic.json` to Cloudflare Pages
+- `.github/workflows/deploy.yml` — GitHub Actions: on push to `main`, run `build.py topics/schuldenbremse web/topic.json` and publish `web/` via `actions/upload-pages-artifact@v3` + `actions/deploy-pages@v4` to GitHub Pages
 
 ---
 

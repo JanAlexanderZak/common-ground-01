@@ -7,6 +7,12 @@ __pycache__/
 build/
 dist/
 
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
 # uv / virtualenv
 .venv/
 .python-version-local

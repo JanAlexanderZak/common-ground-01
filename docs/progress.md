@@ -9,24 +9,26 @@
 
 ## Current status
 
-**Phase A weeks 1–9: code + content complete (DRAFT, pending review).** 18 tests green; ruff + ty clean. End-to-end pipeline produces a 30-statement, 43-edge Schuldenbremse argument graph from `topics/schuldenbremse/` with zero unresolved cross-file references.
+**Phase A weeks 1–11 + Wk 12 prep + Wk 12 deploy workflow: complete.** 35 tests green; ruff + ty clean; coverage 91% (gate: ≥80%). End-to-end pipeline produces a 30-statement, 43-edge Schuldenbremse argument graph from `topics/schuldenbremse/` with zero unresolved cross-file references and zero unresolved actor or data-file references (validator-enforced).
 
 | Component | Status |
 |---|---|
-| Toolchain (`src/common_ground/`, `build.py`) | ✅ |
-| Format spec + JSON schema (`format/`) | ✅ |
-| Web renderer (`web/`) | ✅ code; visual verification still on user |
+| Toolchain (`src/common_ground/`, `build.py`) | ✅ — parser, validator, serializer, schema; build.py exits non-zero on validator errors |
+| Format spec + JSON schema (`format/`) | ✅ — schema enforced in `tests/test_schema_conformance.py` for every example + Schuldenbremse |
+| Web renderer (`web/`) | ✅ code; OG tags present; visual verification still on user |
 | Schuldenbremse content (`topics/schuldenbremse/`) | ✅ DRAFT; 30 statements across L0–L4, 43 edges, 3 CSV data refs, 20 sourced statements |
 | Central actors registry (`actors/`) | ✅ DRAFT; 15 actors (institutions, parties, AI agent example) |
+| **LICENSE** (AGPL-3.0) | ✅ |
+| **GitHub Pages workflow** (`.github/workflows/deploy.yml`) | ✅ — pending one-time manual step: repo Settings → Pages → Source = "GitHub Actions" |
 
 **Still open (user-driven, not blocking code):**
 
-- **OSS license** — LICENSE file decision (AGPL-3.0 recommended).
 - **Visual verification** of the renderer in a browser (see Wks 3–5 instructions).
 - **Editorial review** of Schuldenbremse content by a political-science contact — every L0/L1 number, source URL, and party position should be cross-checked. The 30 nodes include `[DRAFT — verify]` markers on uncertain sources (mostly the L2 mechanism citations, which point at journal landing pages rather than specific articles).
 - **Data verification** against Destatis / Bundesbank — `data/README.md` lists what to check.
+- **OG `og:url` and (commented) Plausible domain** in `web/index.html` use a placeholder GitHub username (`janalexzak`); update if your handle differs.
 
-**Next: Wk 12 — static deployment.** GitHub Actions building `topic.json` on push and deploying `web/` to Cloudflare Pages (or Netlify). Then Wk 13 is the tester round (humans), and Wks 14–18 the application prep.
+**Next: enable GitHub Pages in repo settings, push to `main`, verify the live URL, then run Wk 13 informal walkthroughs.** Wks 14–18 application prep continues in parallel; long-lead items (Freiberufler, editorial board, KIT outreach) should be in flight.
 
 ---
 
@@ -35,7 +37,7 @@
 ### Wks 1–2 — Format spec v0.1 + parser library ✅ Complete
 - [x] `pyproject.toml` — src layout, pytest dev dep, hatchling build backend
 - [x] `README.md` — quickstart, format example, Python API, format conventions, gotchas, data model
-- [ ] `LICENSE` — **still pending OSS-license decision** (AGPL-3.0 recommended)
+- [x] `LICENSE` — AGPL-3.0-or-later (added 2026-05-05)
 - [x] `src/common_ground/__init__.py` — public API surface
 - [x] `src/common_ground/parser.py` — `parse_string` walks marko AST (H2 layers, H3 statements, list-item edges, Quote metadata blocks); `parse_dir` reads `topic.md` frontmatter + H1 title, then walks `<topic>/statements/*.md` and merges
 - [x] `src/common_ground/model.py` — `Statement`, `Edge`, `Source`, `DataRef`, `TopicMetadata`, `TypedGraph`
@@ -76,16 +78,28 @@
 - [x] Layer color legend in bottom-left
 - [ ] Visual verification in browser — **user-driven**
 
-### Wk 12 — Static deployment
-- [ ] `.github/workflows/build.yml` — GitHub Actions
-- [ ] Deploy to Cloudflare Pages or Netlify
-- [ ] HTTPS, OG tags
-- [ ] Plausible Analytics
+### Wk 12 prep — Carry-over fixes (Phase A finalization) ✅ Complete (2026-05-05)
+- [x] `LICENSE` (AGPL-3.0-or-later) at repo root + `pyproject.toml` `[project] license` + classifiers + README license section. Schuldenbremse content keeps `CC-BY-SA-4.0` per `topic.md` frontmatter (dual licensing pattern).
+- [x] `src/common_ground/validator.py` — `validate_graph(graph, *, actors_dir, topic_dir)` returning `list[Issue]`; edge-target / actor-ID / data-path resolution. Exported via `common_ground.__init__`.
+- [x] Wire validator into `build.py` (non-zero exit on errors). Heuristic: only enforce central `actors/` for topics under `topics/` so `examples/` placeholder actors don't trip the build.
+- [x] `tests/test_validator.py` — 9 tests: empty/clean cases, all 3 issue kinds, opt-in flag defaults, integration on `examples/full` + `topics/schuldenbremse`.
+- [x] `tests/test_schema_conformance.py` — 4 parametrized tests round-tripping every example + Schuldenbremse through `format/schema.json` via `jsonschema`. No drift.
+- [x] `pytest-cov` in dev group; `--cov-fail-under=80` in `[tool.pytest.ini_options]`. Current coverage: 91%.
 
-### Wk 13 — Tester round
-- [ ] 10–20 testers across political spectrum
-- [ ] Layer-location task: ≥70% can identify a layer
-- [ ] Data-trust task: ≥60% report data traces help
+### Wk 12 — Static deployment to GitHub Pages ✅ Code complete (2026-05-05)
+- [x] `.github/workflows/deploy.yml` — GitHub Actions: `uv sync` → `ruff check` → `ty check` → `pytest` → `build.py topics/schuldenbremse web/topic.json` → `actions/upload-pages-artifact@v3` → `actions/deploy-pages@v4`
+- [ ] **Repo Settings → Pages → Source = "GitHub Actions"** (one-time manual step — user)
+- [ ] Verify `https://<user>.github.io/common_ground/` renders the Schuldenbremse graph (after first push to main)
+- [x] OG/meta tags in `web/index.html` (description, og:title/description/url/type, twitter:card)
+- [ ] Plausible Analytics snippet present-but-commented; uncomment after demo URL settles
+- [ ] (Optional) inline-SVG sparkline from CSV samples — rescues the data-trust hypothesis cheaply (deferred unless walkthroughs need it)
+- [ ] (Deferred) custom domain `common-ground.de` via CNAME
+
+### Wk 13 — Informal walkthroughs (replaces formal tester round)
+- [ ] 3–5 walkthroughs (1 political-science contact, 1 dev colleague, 1 layperson minimum)
+- [ ] Layer-location prompt: "Find a statement you disagree with — what kind is it?"
+- [ ] Data-trust prompt: "Click `f2`. What data backs it? Do you trust it?"
+- [ ] Iterate; escalate to formal survey only if comprehensibility blockers surface
 
 ### Wks 14–18 — Application prep
 - [ ] 3 × 2,000-char DE summaries (V07–V08)
@@ -107,7 +121,7 @@
 - [ ] OSS license (AGPL recommended) — week 1
 - [x] Markdown parser library — **marko** (locked in 2026-05-04)
 - [x] Chart library — **none** (locked in 2026-05-04). Phase A v1 renders no inline charts; sparklines for data refs are a follow-up. When added, custom inline SVG (no library) is the default; introduce a real chart library only if/when richer interactions are needed.
-- [ ] Hosting target (Cloudflare Pages recommended) — week 12
+- [x] Hosting target — **GitHub Pages** (locked 2026-05-05). Cloudflare Pages / Netlify rejected as second-vendor overhead for static-only Phase A. Custom domain `common-ground.de` deferred until adoption justifies it.
 - [ ] Editorial board contacts (≥2 by Sep 2026)
 - [ ] DebateLab/KIT outreach (by Jul 2026)
 - [ ] Freiberufler status (start now)
@@ -122,6 +136,7 @@ Most recent first.
 
 | Date | Block | Notes |
 |---|---|---|
+| 2026-05-05 | **Wk 12 prep + Wk 12 — fixes + GitHub Pages workflow** | Phase 1 fixes: TDD'd `src/common_ground/validator.py` (`validate_graph(graph, *, actors_dir, topic_dir) → list[Issue]`) covering the three reference-resolution failure modes — dangling edge target, unknown actor ID, missing data file. Wired into `build.py` with non-zero exit on errors; uses a `_resolve_actors_dir` heuristic so only topics under `topics/` enforce the central `actors/` registry (the heuristic surfaced when `examples/full`'s placeholder actor IDs initially failed strict validation — caught by the validator working as designed). Added `tests/test_validator.py` (9 tests, RED→GREEN→REFACTOR) and `tests/test_schema_conformance.py` (4 parametrized tests round-tripping every example + Schuldenbremse through `format/schema.json`; no parser/schema drift). Wired `pytest-cov` with `--cov-fail-under=80` in pyproject; current coverage 91%. Added `LICENSE` (AGPL-3.0-or-later, official text from gnu.org); set `pyproject` `license` + classifiers; README license section explains dual licensing (code AGPL, content per-topic CC-BY-SA). `.gitignore` updated for `.coverage` + `.pytest_cache/`. Phase 2 deploy: wrote `.github/workflows/deploy.yml` (uv → ruff → ty → pytest → build → upload-pages-artifact → deploy-pages). Added OG/twitter meta tags to `web/index.html` (Plausible commented until URL settles). 35 tests green; ruff + ty clean. **Pending user step:** repo Settings → Pages → Source = "GitHub Actions". |
 | 2026-05-04 | **Wks 10–11 trace-down + stance** | Rewrote `web/main.js` (170 → 470 lines) to add the killer-UX features: localStorage-backed stance per statement (agree/disagree/uncertain, persisted as `cg-stances:<topic>`), three filter modes (All / L0–L2 only / My disagreements), and the trace-down interaction (click a node → side panel; click "Trace down" → fades all nodes outside the reachable subgraph computed by BFS over outgoing edges). Also added the previously-deferred statement-detail side panel: full sources with retrieved/source-type, endorsed/disputed actor pills, data refs with descriptions. Plus a layer-color legend in the bottom-left. The new state machine is `selectedId` (driven by node click) + `traceMode` toggle + `filterMode` enum, all composed via `useMemo` into the React Flow nodes/edges so visual updates happen on a single re-render. Visual verification in browser is on the user. 22 tests green; ruff + ty clean. |
 | 2026-05-04 | **Wks 6–9 Schuldenbremse content** | Dispatched 6 parallel general-purpose subagents per the user's request: 5 statement-file authors (one per layer-file) + 1 actor-registry author. Each agent received the full master ID list, actor list, format-spec pointer, and a per-file assignment with statement intents. Result: **30 statements, 43 edges, 0 unresolved cross-file references** in `topics/schuldenbremse/`, plus 15 actors in `actors/`. Verifying agents found and corrected drafted figures (Schuldenquote 2023 is 63.7% by Maastricht definition, not the 62.4% I had as placeholder; KfW Kommunalpanel reports 186 bn EUR investment backlog, not 166). Three CSV data traces (`debt-to-gdp.csv`, `bip-wachstum.csv`, `inflation-hvpi.csv`) committed with DRAFT markers. Also fixed a Windows-specific bug in `build.py`: `sys.stdout.reconfigure(encoding="utf-8")` is now needed so German content + em-dashes survive shell redirection on Windows (default cp1252 corrupts UTF-8 multibyte sequences). All work is DRAFT — content needs editorial review by a political-science contact before public release. 18 tests green; ruff + ty clean. |
 | 2026-05-04 | **Wks 3–5 web renderer** | Static SPA in [`web/`](../web/): `index.html` with an importmap pointing at esm.sh for React 18, `@xyflow/react` 12, `@dagrejs/dagre` 1, and `htm/react` (JSX-equivalent for a no-build setup); Tailwind via the play CDN. `main.js` fetches `./topic.json`, builds React Flow nodes/edges, runs dagre with `rankdir: "TB"` for top-down layout (policies above their supporting facts), and renders a custom `StatementNode` per layer with distinct colors (slate/blue/orange/purple/red). Edge styles per relation: solid green for `supports`, dashed red for `attacks`/`attacked-by`, solid blue for `evidence`, dotted purple for `qualifies`. End-to-end pipeline verified: `build.py examples/full > web/topic.json` produces a 1.3 KB JSON the renderer is wired to consume. **Visual verification is on the user** (no browser harness in this loop). Sparklines and the click-for-details panel deferred to follow-up iterations. |
