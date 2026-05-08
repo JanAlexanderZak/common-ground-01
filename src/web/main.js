@@ -22,8 +22,10 @@ import {
   Controls,
   MiniMap,
   Panel,
+  Handle,
+  Position,
+  MarkerType,
 } from "@xyflow/react";
-import dagre from "@dagrejs/dagre";
 import { html } from "htm/react";
 
 const LAYER_NAMES = {
@@ -50,14 +52,17 @@ const RELATION_STYLES = {
   qualifies: { stroke: "#7c3aed", strokeWidth: 1.5, strokeDasharray: "2 2" },
 };
 
-const STANCE_ICONS = {
-  agree: { symbol: "✓", color: "bg-green-600" },
-  disagree: { symbol: "✗", color: "bg-red-600" },
-  uncertain: { symbol: "?", color: "bg-yellow-500" },
-};
-
 const NODE_W = 280;
 const NODE_H = 110;
+const COL_GAP = 40;
+const ROW_GAP = 24;
+const COL_X = {
+  0: 0,
+  1: NODE_W + COL_GAP,
+  2: 2 * (NODE_W + COL_GAP),
+  3: 3 * (NODE_W + COL_GAP),
+  4: 4 * (NODE_W + COL_GAP),
+};
 
 // =====================================================
 // Custom node renderer
@@ -66,28 +71,26 @@ const NODE_H = 110;
 function StatementNode({ data }) {
   const layerClass = LAYER_CLASSES[data.layer] || "bg-white border-gray-400";
   const layerName = LAYER_NAMES[data.layer] || `L${data.layer}`;
-  const stance = data._stance;
-  const isFaded = data._isFaded;
   const isSelected = data._isSelected;
-
-  const fadeClass = isFaded ? "opacity-25" : "";
   const selectedClass = isSelected
     ? "ring-2 ring-blue-500 ring-offset-1"
     : "";
 
   return html`
     <div
-      class="rounded border-2 ${layerClass} shadow-sm p-3 transition-opacity ${fadeClass} ${selectedClass} relative"
+      class="rounded border-2 ${layerClass} shadow-sm p-3 ${selectedClass} relative"
       style=${{ width: NODE_W }}
     >
-      ${stance &&
-      html`
-        <div
-          class="absolute -top-2 -right-2 w-6 h-6 rounded-full ${STANCE_ICONS[stance].color} text-white text-xs flex items-center justify-center font-bold shadow"
-        >
-          ${STANCE_ICONS[stance].symbol}
-        </div>
-      `}
+      <${Handle}
+        type="target"
+        position=${Position.Left}
+        style=${{ opacity: 0, background: "transparent", border: "none" }}
+      />
+      <${Handle}
+        type="source"
+        position=${Position.Right}
+        style=${{ opacity: 0, background: "transparent", border: "none" }}
+      />
       <div class="text-[10px] uppercase tracking-wide opacity-70 mb-1">
         ${layerName} · ${data.id}
       </div>
@@ -117,96 +120,65 @@ function StatementNode({ data }) {
 const NODE_TYPES = { statement: StatementNode };
 
 // =====================================================
-// Layout + reachability
+// Layout: layer-as-column pyramid (L0 left → L4 right)
 // =====================================================
 
-// dagre with rankdir="TB": edge sources are placed above edge targets, so
-// a `p1 supports c1` edge stacks p1 (L4) above c1 (L2).
+// Each layer becomes a vertical column. X is fixed by layer; Y is computed
+// per column with a barycentric pass to reduce edge crossings: nodes in
+// column N are sorted by the average Y of their neighbors in column N-1.
+// `edges` here are the renderer-flipped edges (source = visual-left node,
+// target = visual-right node), so each node's left-neighbors are the
+// sources of incoming edges.
 function applyLayout(nodes, edges) {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "TB", ranksep: 90, nodesep: 40 });
-  for (const node of nodes) {
-    g.setNode(node.id, { width: NODE_W, height: NODE_H });
+  const byLayer = { 0: [], 1: [], 2: [], 3: [], 4: [] };
+  for (const n of nodes) {
+    const layer = n.data.layer;
+    if (byLayer[layer]) byLayer[layer].push(n);
   }
-  for (const edge of edges) {
-    g.setEdge(edge.source, edge.target);
-  }
-  dagre.layout(g);
-  return nodes.map((node) => {
-    const dn = g.node(node.id);
-    return {
-      ...node,
-      position: { x: dn.x - dn.width / 2, y: dn.y - dn.height / 2 },
-    };
-  });
-}
 
-// Statements reachable from `startId` by following outgoing edges (BFS).
-// Used by trace-down: from a focused L4 statement, walk down through
-// supports/evidence/qualifies to all the L2/L1/L0 nodes it depends on.
-function reachableFrom(startId, edges) {
-  const reached = new Set([startId]);
-  const queue = [startId];
-  while (queue.length) {
-    const current = queue.shift();
-    for (const e of edges) {
-      if (e.source === current && !reached.has(e.target)) {
-        reached.add(e.target);
-        queue.push(e.target);
+  const yCenterById = new Map();
+  const positioned = [];
+
+  const stride = NODE_H + ROW_GAP;
+
+  for (const layer of [0, 1, 2, 3, 4]) {
+    const group = byLayer[layer];
+    if (group.length === 0) continue;
+
+    if (layer > 0) {
+      for (const n of group) {
+        const lefts = edges
+          .filter((e) => e.target === n.id)
+          .map((e) => yCenterById.get(e.source))
+          .filter((y) => y !== undefined);
+        n._sortKey =
+          lefts.length > 0
+            ? lefts.reduce((a, b) => a + b, 0) / lefts.length
+            : 0;
       }
+      group.sort((a, b) => a._sortKey - b._sortKey);
     }
-  }
-  return reached;
-}
 
-// =====================================================
-// Stance state, persisted to localStorage per topic
-// =====================================================
-
-function useStances(topicId) {
-  const storageKey = `cg-stances:${topicId || "default"}`;
-  const [stances, setStances] = useState(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const setStance = useCallback(
-    (statementId, stance) => {
-      setStances((prev) => {
-        const next = { ...prev };
-        if (stance === null) delete next[statementId];
-        else next[statementId] = stance;
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(next));
-        } catch {
-          // Private mode / quota: silently degrade to in-memory.
-        }
-        return next;
+    const totalHeight = group.length * stride - ROW_GAP;
+    const startY = -totalHeight / 2;
+    group.forEach((n, i) => {
+      const y = startY + i * stride;
+      yCenterById.set(n.id, y + NODE_H / 2);
+      positioned.push({
+        ...n,
+        position: { x: COL_X[layer], y },
       });
-    },
-    [storageKey],
-  );
+    });
+  }
 
-  return [stances, setStance];
+  return positioned;
 }
 
 // =====================================================
-// Side panel: full statement view + stance + trace-down
+// Side panel: full statement view (read-only)
 // =====================================================
 
-function SidePanel({
-  statement,
-  stance,
-  onSetStance,
-  onToggleTrace,
-  traceMode,
-  onClose,
-}) {
+function SidePanel({ statement, onClose }) {
   if (!statement) return null;
   const layerName = LAYER_NAMES[statement.layer] || `L${statement.layer}`;
 
@@ -320,83 +292,14 @@ function SidePanel({
             )}
           </div>
         `}
-
-        <div class="mt-6 pt-4 border-t">
-          <div class="text-xs font-semibold uppercase text-gray-500 mb-2">
-            Your stance
-          </div>
-          <div class="flex gap-2 flex-wrap">
-            ${["agree", "disagree", "uncertain"].map(
-              (s) => html`
-                <button
-                  key=${s}
-                  onClick=${() => onSetStance(stance === s ? null : s)}
-                  class=${`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                    stance === s
-                      ? `${STANCE_ICONS[s].color} text-white`
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  ${STANCE_ICONS[s].symbol} ${s}
-                </button>
-              `,
-            )}
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <button
-            onClick=${onToggleTrace}
-            class=${`w-full py-2 rounded text-sm font-medium transition-colors ${
-              traceMode
-                ? "bg-blue-600 text-white"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-            }`}
-          >
-            ${traceMode
-              ? "Tracing — click to stop"
-              : "🔍 Trace down — show what this depends on"}
-          </button>
-        </div>
-
-        <div class="mt-4 text-xs text-gray-500">
-          Tip: click another node to switch focus. Click empty space to clear.
-        </div>
       </div>
     </div>
   `;
 }
 
 // =====================================================
-// Filter buttons + legend
+// Legend
 // =====================================================
-
-function FilterButtons({ filterMode, onFilterChange }) {
-  const filters = [
-    { id: "all", label: "All" },
-    { id: "factual", label: "L0–L2 only" },
-    { id: "disagreements", label: "My disagreements" },
-  ];
-  return html`
-    <div class="bg-white p-2 rounded shadow border border-gray-200 flex gap-1">
-      ${filters.map(
-        (f) => html`
-          <button
-            key=${f.id}
-            onClick=${() => onFilterChange(f.id)}
-            class=${`px-3 py-1 rounded text-xs font-medium transition-colors ${
-              filterMode === f.id
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            ${f.label}
-          </button>
-        `,
-      )}
-    </div>
-  `;
-}
 
 function Legend() {
   return html`
@@ -423,8 +326,6 @@ function App() {
   const [graph, setGraph] = useState(null);
   const [error, setError] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [traceMode, setTraceMode] = useState(false);
-  const [filterMode, setFilterMode] = useState("all");
 
   useEffect(() => {
     fetch("./topic.json")
@@ -436,75 +337,42 @@ function App() {
       .catch((e) => setError(e.message));
   }, []);
 
-  const topicId = graph?.metadata?.topic ?? null;
-  const [stances, setStance] = useStances(topicId);
-
-  // Filter visible statements based on filterMode + stances.
-  const visibleStatementIds = useMemo(() => {
-    if (!graph) return new Set();
-    let filtered;
-    switch (filterMode) {
-      case "factual":
-        filtered = graph.statements.filter((s) => s.layer <= 2);
-        break;
-      case "disagreements":
-        filtered = graph.statements.filter(
-          (s) => stances[s.id] === "disagree",
-        );
-        break;
-      default:
-        filtered = graph.statements;
-    }
-    return new Set(filtered.map((s) => s.id));
-  }, [graph, filterMode, stances]);
-
-  // When trace-down is active, compute the reachable subgraph from the
-  // currently-selected statement.
-  const reachableSet = useMemo(() => {
-    if (!graph || !traceMode || !selectedId) return null;
-    return reachableFrom(selectedId, graph.edges);
-  }, [graph, traceMode, selectedId]);
-
-  // Compose React Flow nodes/edges with all visual state baked in.
   const { nodes, edges } = useMemo(() => {
     if (!graph) return { nodes: [], edges: [] };
 
-    const visibleStatements = graph.statements.filter((s) =>
-      visibleStatementIds.has(s.id),
-    );
-    const visibleEdges = graph.edges.filter(
-      (e) =>
-        visibleStatementIds.has(e.source) && visibleStatementIds.has(e.target),
-    );
-
-    const initialNodes = visibleStatements.map((s) => ({
+    const initialNodes = graph.statements.map((s) => ({
       id: s.id,
       type: "statement",
       data: {
         ...s,
-        _stance: stances[s.id],
         _isSelected: s.id === selectedId,
-        _isFaded: reachableSet ? !reachableSet.has(s.id) : false,
       },
       position: { x: 0, y: 0 },
     }));
 
-    const initialEdges = visibleEdges.map((e, i) => {
-      const isFaded = reachableSet
-        ? !(reachableSet.has(e.source) && reachableSet.has(e.target))
-        : false;
+    // Flip edge direction so arrows point left → right (premise → conclusion).
+    // The data still says "policy supports its premises" — only the visual
+    // is reversed.
+    const initialEdges = graph.edges.map((e, i) => {
       const baseStyle = RELATION_STYLES[e.relation] || {
         stroke: "#6b7280",
         strokeWidth: 1.5,
       };
       return {
-        id: `e${i}`,
-        source: e.source,
-        target: e.target,
+        id: `${e.source}->${e.target}-${i}`,
+        source: e.target,
+        target: e.source,
+        type: "smoothstep",
         label: e.relation,
-        style: { ...baseStyle, opacity: isFaded ? 0.2 : 1 },
-        labelStyle: { fontSize: 10, fill: "#374151", opacity: isFaded ? 0.3 : 1 },
-        labelBgStyle: { fill: "white", fillOpacity: isFaded ? 0.3 : 0.9 },
+        style: baseStyle,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: baseStyle.stroke,
+          width: 16,
+          height: 16,
+        },
+        labelStyle: { fontSize: 10, fill: "#374151" },
+        labelBgStyle: { fill: "white", fillOpacity: 0.9 },
         labelBgPadding: [4, 2],
         labelBgBorderRadius: 2,
       };
@@ -514,7 +382,7 @@ function App() {
       nodes: applyLayout(initialNodes, initialEdges),
       edges: initialEdges,
     };
-  }, [graph, visibleStatementIds, stances, selectedId, reachableSet]);
+  }, [graph, selectedId]);
 
   const selectedStatement = useMemo(() => {
     if (!graph || !selectedId) return null;
@@ -527,7 +395,6 @@ function App() {
 
   const onPaneClick = useCallback(() => {
     setSelectedId(null);
-    setTraceMode(false);
   }, []);
 
   if (error) {
@@ -555,8 +422,6 @@ function App() {
   const meta = graph.metadata || {};
   const totalStatements = graph.statements.length;
   const totalEdges = graph.edges.length;
-  const visibleCount = visibleStatementIds.size;
-  const stanceCount = Object.keys(stances).length;
 
   return html`
     <${ReactFlow}
@@ -566,8 +431,9 @@ function App() {
       onNodeClick=${onNodeClick}
       onPaneClick=${onPaneClick}
       fitView
+      fitViewOptions=${{ padding: 0.1 }}
       proOptions=${{ hideAttribution: true }}
-      minZoom=${0.2}
+      minZoom=${0.15}
       maxZoom=${2}
     >
       <${Background} />
@@ -579,24 +445,11 @@ function App() {
             ${meta.title || meta.topic || "Topic"}
           </div>
           <div class="text-xs text-gray-500 mt-1">
-            ${visibleCount === totalStatements
-              ? html`${totalStatements} statements · ${totalEdges} edges`
-              : html`${visibleCount} of ${totalStatements} statements visible`}
-            ${meta.language ? html` · ${meta.language}` : null}
+            ${totalStatements} statements · ${totalEdges} edges${meta.language
+              ? html` · ${meta.language}`
+              : null}
           </div>
-          ${stanceCount > 0 &&
-          html`
-            <div class="text-xs text-gray-500 mt-0.5">
-              ${stanceCount} of ${totalStatements} stances marked
-            </div>
-          `}
         </div>
-      <//>
-      <${Panel} position="top-right">
-        <${FilterButtons}
-          filterMode=${filterMode}
-          onFilterChange=${setFilterMode}
-        />
       <//>
       <${Panel} position="bottom-left">
         <${Legend} />
@@ -604,14 +457,7 @@ function App() {
     <//>
     <${SidePanel}
       statement=${selectedStatement}
-      stance=${selectedId ? stances[selectedId] : undefined}
-      onSetStance=${(s) => selectedId && setStance(selectedId, s)}
-      onToggleTrace=${() => setTraceMode((m) => !m)}
-      traceMode=${traceMode}
-      onClose=${() => {
-        setSelectedId(null);
-        setTraceMode(false);
-      }}
+      onClose=${() => setSelectedId(null)}
     />
   `;
 }
