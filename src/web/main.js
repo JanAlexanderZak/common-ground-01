@@ -217,24 +217,6 @@ function applyLayout(nodes, edges) {
   return positioned;
 }
 
-// Statements reachable from `startId` by following outgoing data edges:
-// the cards `startId` builds on, transitively. Used to highlight upstream
-// chain when a card is selected.
-function upstreamFrom(startId, dataEdges) {
-  const reached = new Set([startId]);
-  const queue = [startId];
-  while (queue.length) {
-    const cur = queue.shift();
-    for (const e of dataEdges) {
-      if (e.source === cur && !reached.has(e.target)) {
-        reached.add(e.target);
-        queue.push(e.target);
-      }
-    }
-  }
-  return reached;
-}
-
 // =====================================================
 // Side panel: full statement view (read-only)
 // =====================================================
@@ -502,45 +484,17 @@ function App() {
     return new Map(graph.statements.map((s) => [s.id, s]));
   }, [graph]);
 
+  const edgePairs = graph?.derived?.edge_pairs ?? [];
+
   const upstreamSet = useMemo(() => {
     if (!graph || !selectedId) return null;
-    return upstreamFrom(selectedId, graph.edges);
+    const ids = graph.derived?.upstream_by_id?.[selectedId] ?? [];
+    return new Set([selectedId, ...ids]);
   }, [graph, selectedId]);
 
-  const renderableEdges = useMemo(() => {
-    if (!graph) return [];
-    const seen = new Set();
-    const out = [];
-    for (const e of graph.edges) {
-      const key = [e.source, e.target].sort().join("::");
-      if (seen.has(key)) continue;
-      const inverse = graph.edges.find(
-        (x) => x.source === e.target && x.target === e.source,
-      );
-      if (inverse) {
-        out.push({
-          source: e.source,
-          target: e.target,
-          relation: e.relation,
-          inverseRelation: inverse.relation,
-          mutual: true,
-        });
-        seen.add(key);
-      } else {
-        out.push({
-          source: e.source,
-          target: e.target,
-          relation: e.relation,
-          mutual: false,
-        });
-      }
-    }
-    return out;
-  }, [graph]);
-
   const hasMutual = useMemo(
-    () => renderableEdges.some((e) => e.mutual),
-    [renderableEdges],
+    () => edgePairs.some((e) => e.mutual),
+    [edgePairs],
   );
 
   const { nodes, edges } = useMemo(() => {
@@ -561,7 +515,7 @@ function App() {
       };
     });
 
-    const visualEdges = renderableEdges.map((e, i) => {
+    const visualEdges = edgePairs.map((e, i) => {
       const sLayer = statementById.get(e.source)?.layer ?? 0;
       const tLayer = statementById.get(e.target)?.layer ?? 0;
       // Visual flow: lower layer on the left. Flip only when data goes
@@ -646,7 +600,7 @@ function App() {
     });
 
     return { nodes: positionedNodes, edges: edgesWithHandles };
-  }, [graph, selectedId, upstreamSet, renderableEdges, statementById]);
+  }, [graph, selectedId, upstreamSet, edgePairs, statementById]);
 
   const selectedStatement = useMemo(() => {
     if (!graph || !selectedId) return null;

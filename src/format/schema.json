@@ -4,7 +4,7 @@
   "title": "TypedGraph",
   "description": "Output of common_ground.parse_dir / parse_string, serialized via to_json. v0.1 — draft.",
   "type": "object",
-  "required": ["statements", "edges", "metadata"],
+  "required": ["statements", "edges", "metadata", "derived"],
   "additionalProperties": false,
   "properties": {
     "metadata": { "$ref": "#/$defs/TopicMetadata" },
@@ -15,7 +15,8 @@
     "edges": {
       "type": "array",
       "items": { "$ref": "#/$defs/Edge" }
-    }
+    },
+    "derived": { "$ref": "#/$defs/Derived" }
   },
   "$defs": {
     "TopicMetadata": {
@@ -130,6 +131,39 @@
         "source": { "type": "string" },
         "target": { "type": "string" },
         "relation": { "type": "string" }
+      }
+    },
+    "Derived": {
+      "description": "Pre-computed views over statements/edges, denormalized for renderer convenience. All fields are derivable from the authored data above.",
+      "type": "object",
+      "required": ["edge_pairs", "upstream_by_id"],
+      "additionalProperties": false,
+      "properties": {
+        "edge_pairs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EdgePair" }
+        },
+        "upstream_by_id": {
+          "description": "Map from statement id to the list of statement ids reachable via outgoing edges (excluding self).",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "EdgePair": {
+      "description": "One entry per unordered (source,target) pair. When two opposing directed edges exist, mutual=true and inverseRelation names the reverse relation.",
+      "type": "object",
+      "required": ["source", "target", "relation", "mutual"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "relation": { "type": "string" },
+        "mutual": { "type": "boolean" },
+        "inverseRelation": { "type": "string" }
       }
     }
   }

@@ -32,3 +32,36 @@ def test_to_json_compact_when_indent_none():
 
     assert "\n" not in payload
     json.loads(payload)
+
+
+def test_derived_upstream_by_id_transitive_and_excludes_self():
+    # edges fixture: p1 -> c1, p1 -> p2, p2 -> p1, c1 -> f1, c1 -> f2.
+    graph = parse_dir(EXAMPLES_DIR / "edges")
+    upstream = json.loads(to_json(graph))["derived"]["upstream_by_id"]
+
+    assert upstream["c1"] == ["f1", "f2"]
+    # p1 reaches everything except itself; p2 is reached via the mutual edge.
+    assert upstream["p1"] == ["c1", "f1", "f2", "p2"]
+    assert upstream["p2"] == ["c1", "f1", "f2", "p1"]
+    # Every statement gets an entry, even leaves with no outgoing edges.
+    assert upstream["f1"] == []
+    assert upstream["f2"] == []
+
+
+def test_derived_edge_pairs_dedup_and_mutual():
+    graph = parse_dir(EXAMPLES_DIR / "edges")
+    pairs = json.loads(to_json(graph))["derived"]["edge_pairs"]
+
+    # 5 directed edges in fixture but p1<->p2 collapses to one pair: 4 entries.
+    assert len(pairs) == 4
+
+    mutual = [p for p in pairs if p["mutual"]]
+    assert len(mutual) == 1
+    m = mutual[0]
+    assert {m["source"], m["target"]} == {"p1", "p2"}
+    assert {m["relation"], m["inverseRelation"]} == {"attacks", "attacked-by"}
+
+    # Non-mutual entries omit inverseRelation entirely.
+    for p in pairs:
+        if not p["mutual"]:
+            assert "inverseRelation" not in p
