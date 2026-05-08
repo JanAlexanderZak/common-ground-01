@@ -4,7 +4,11 @@
       "WebSearch",
       "WebFetch(domain:www.prototypefund.de)",
       "WebFetch(domain:prototypefund.de)",
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8000)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('web/topic.json',encoding='utf-8'\\)\\); print\\('OK:', list\\(d.keys\\(\\)\\), 'statements:', len\\(d.get\\('statements',[]\\)\\), 'edges:', len\\(d.get\\('edges',[]\\)\\)\\)\")",
+      "Bash(curl -sL \"https://esm.sh/@dagrejs/dagre@1.1.8/es2022/dagre.mjs\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\janal\\vscode_projects\\common_ground\\web"

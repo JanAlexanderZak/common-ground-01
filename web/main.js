@@ -1,3 +1,19 @@
+// Surface uncaught runtime errors visibly in #root so a silent React-mount
+// failure doesn't look like a blank page. (Won't catch import-resolution
+// failures — those happen before this module body runs; check dev tools.)
+window.addEventListener("error", (e) => {
+  const root = document.getElementById("root");
+  if (root && !root.firstChild) {
+    root.innerHTML = `<pre style="padding:1rem;color:#b91c1c;background:#fef2f2;white-space:pre-wrap;font:13px monospace">Error: ${e.message}\n${e.filename}:${e.lineno}:${e.colno}\n${e.error?.stack ?? ""}</pre>`;
+  }
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const root = document.getElementById("root");
+  if (root && !root.firstChild) {
+    root.innerHTML = `<pre style="padding:1rem;color:#b91c1c;background:#fef2f2;white-space:pre-wrap;font:13px monospace">Unhandled: ${e.reason?.message ?? e.reason}\n${e.reason?.stack ?? ""}</pre>`;
+  }
+});
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -7,7 +23,7 @@ import {
   MiniMap,
   Panel,
 } from "@xyflow/react";
-import * as dagre from "@dagrejs/dagre";
+import dagre from "@dagrejs/dagre";
 import { html } from "htm/react";
 
 const LAYER_NAMES = {
