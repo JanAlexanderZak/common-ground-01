@@ -1,3 +1,5 @@
+"""Parse Markdown topic directories and statement files into a `TypedGraph`."""
+
 import re
 from pathlib import Path
 from typing import Any
@@ -28,15 +30,18 @@ _DATA_LABELS = {"data"}
 
 
 def _normalize_label(label: str) -> str:
+    """Lower-case, trim, and dash-separate a field label for matching."""
     return label.lower().strip().replace(" ", "-")
 
 
 def _extract_actor_ids(inlines: list[Any]) -> list[str]:
+    """Return all `@actor-id` mentions found in a sequence of inline nodes."""
     text = "".join(_inline_text(c) for c in inlines)
     return _ACTOR_REF_PATTERN.findall(text)
 
 
 def _inline_text(node: Any) -> str:
+    """Recursively flatten a marko inline node (or list of them) into plain text."""
     if isinstance(node, str):
         return node
     children = getattr(node, "children", None)
@@ -48,6 +53,7 @@ def _inline_text(node: Any) -> str:
 
 
 def _parse_edge_item(item: Any) -> tuple[str, list[str]] | None:
+    """Parse a `**relation:** target1, target2` list item into (relation, [targets]); return None if it doesn't match."""
     if not item.children:
         return None
     block = item.children[0]
@@ -72,6 +78,7 @@ def _parse_edge_item(item: Any) -> tuple[str, list[str]] | None:
 
 
 def _parse_field_item(item: Any) -> tuple[str, str] | None:
+    """Parse a `key: value` list item into (key, value); return None if it doesn't match."""
     if not item.children:
         return None
     block = item.children[0]
@@ -83,12 +90,14 @@ def _parse_field_item(item: Any) -> tuple[str, str] | None:
 
 
 def _apply_source_field(source: Source, key: str, value: str) -> None:
+    """Assign `value` to the matching attribute of `source` (dashes mapped to underscores)."""
     attr = key.replace("-", "_")
     if hasattr(source, attr):
         setattr(source, attr, value)
 
 
 def _build_source(inline_rest: list[Any], sub_list: Any | None) -> Source:
+    """Build a `Source` from an inline `Link` plus an optional sub-list of `key: value` fields."""
     source = Source()
     for inline in inline_rest:
         if isinstance(inline, Link):
@@ -104,6 +113,7 @@ def _build_source(inline_rest: list[Any], sub_list: Any | None) -> Source:
 
 
 def _build_data_ref(inline_value: list[Any]) -> DataRef | None:
+    """Build a `DataRef` from an inline `Link` followed by optional description text."""
     path: str | None = None
     label: str | None = None
     description_parts: list[str] = []
@@ -125,6 +135,7 @@ def _build_data_ref(inline_value: list[Any]) -> DataRef | None:
 
 
 def _split_paragraph_fields(inlines: list[Any]) -> list[tuple[str, list[Any]]]:
+    """Split a paragraph's inlines on bold (`**Label:**`) markers into (label, value-inlines) pairs."""
     fields: list[tuple[str, list[Any]]] = []
     current_label: str | None = None
     current_value: list[Any] = []
@@ -145,6 +156,11 @@ def _split_paragraph_fields(inlines: list[Any]) -> list[tuple[str, list[Any]]]:
 
 
 def _parse_metadata_block(quote: Quote, statement: Statement) -> None:
+    """Walk a blockquote and attach its citation / endorsement / dispute / data-ref fields to `statement`.
+
+    A trailing sub-list is treated as detail for the last bold field of the
+    preceding paragraph.
+    """
     children = list(quote.children)
     i = 0
     while i < len(children):
@@ -182,6 +198,7 @@ _FRONTMATTER_DELIMITER = "---"
 
 
 def _split_frontmatter(content: str) -> tuple[str, str]:
+    """Separate a leading `---`-delimited YAML frontmatter block from the rest of the Markdown body."""
     lines = content.splitlines(keepends=False)
     if not lines or lines[0].strip() != _FRONTMATTER_DELIMITER:
         return "", content
@@ -192,6 +209,7 @@ def _split_frontmatter(content: str) -> tuple[str, str]:
 
 
 def _parse_topic_md(content: str) -> TopicMetadata:
+    """Build a `TopicMetadata` from `topic.md` content (YAML frontmatter + first H1 as title)."""
     metadata = TopicMetadata()
     frontmatter, body = _split_frontmatter(content)
 
@@ -218,12 +236,14 @@ def _parse_topic_md(content: str) -> TopicMetadata:
 
 
 def _str_or_none(value: Any) -> str | None:
+    """Return `str(value)`, or None if `value` is None."""
     if value is None:
         return None
     return str(value)
 
 
 def parse_dir(topic_path: str | Path) -> TypedGraph:
+    """Parse a topic directory (`topic.md` + `statements/*.md`) into a TypedGraph."""
     topic_path = Path(topic_path)
     graph = TypedGraph()
 
@@ -242,6 +262,7 @@ def parse_dir(topic_path: str | Path) -> TypedGraph:
 
 
 def parse_string(markdown: str) -> TypedGraph:
+    """Parse a single statements-Markdown string into a partial TypedGraph (no metadata)."""
     doc = marko.parse(markdown)
     graph = TypedGraph()
     current_layer: int | None = None

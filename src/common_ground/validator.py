@@ -1,3 +1,5 @@
+"""Structural checks on a parsed `TypedGraph` (dangling edges, unknown actors, missing data files)."""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -12,6 +14,8 @@ _REGISTRY_NON_ACTOR_FILES = {"README", "schema"}
 
 @dataclass(frozen=True)
 class Issue:
+    """A single validation finding: severity, machine-readable kind, and human-readable detail."""
+
     severity: Severity
     kind: IssueKind
     detail: str
@@ -23,6 +27,11 @@ def validate_graph(
     actors_dir: Path | None = None,
     topic_dir: Path | None = None,
 ) -> list[Issue]:
+    """Run all enabled checks against `graph` and return the issues found.
+
+    `actors_dir` enables actor-id verification; `topic_dir` enables data-ref
+    file-existence checks.
+    """
     issues: list[Issue] = []
     issues.extend(_check_edge_targets(graph))
     if actors_dir is not None:
@@ -33,6 +42,7 @@ def validate_graph(
 
 
 def _check_edge_targets(graph: TypedGraph) -> list[Issue]:
+    """Flag edges whose target id is not present among the graph's statements."""
     known = {s.id for s in graph.statements}
     issues: list[Issue] = []
     for edge in graph.edges:
@@ -51,6 +61,7 @@ def _check_edge_targets(graph: TypedGraph) -> list[Issue]:
 
 
 def _check_actor_refs(graph: TypedGraph, actors_dir: Path) -> list[Issue]:
+    """Flag `@actor` mentions whose id has no corresponding `*.md` in the actors registry."""
     if not actors_dir.is_dir():
         return []
     known = {
@@ -71,6 +82,7 @@ def _check_actor_refs(graph: TypedGraph, actors_dir: Path) -> list[Issue]:
 
 
 def _check_data_refs(graph: TypedGraph, topic_dir: Path) -> list[Issue]:
+    """Flag data refs whose path does not resolve to a file under the topic directory."""
     if not topic_dir.is_dir():
         return []
     issues: list[Issue] = []
@@ -91,6 +103,7 @@ def _check_data_refs(graph: TypedGraph, topic_dir: Path) -> list[Issue]:
 
 
 def _data_ref_resolves(ref_path: str, topic_dir: Path) -> bool:
+    """Return True if `ref_path` resolves under any of the supported locations: `<topic>/statements/<ref>`, `<topic>/<ref>`, or `<topic>/data/<basename>`."""
     # Statements typically live in <topic>/statements/, so a ref like
     # "../data/x.csv" resolves to <topic>/data/x.csv. Also accept refs
     # written relative to <topic> directly, and bare-name refs against

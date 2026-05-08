@@ -37,11 +37,11 @@ const LAYER_NAMES = {
 };
 
 const LAYER_CLASSES = {
-  0: "bg-slate-50 border-slate-400 text-slate-900",
-  1: "bg-blue-50 border-blue-400 text-blue-900",
-  2: "bg-orange-50 border-orange-400 text-orange-900",
+  0: "bg-stone-50 border-stone-400 text-stone-900",
+  1: "bg-slate-50 border-slate-400 text-slate-900",
+  2: "bg-cyan-50 border-cyan-400 text-cyan-900",
   3: "bg-purple-50 border-purple-400 text-purple-900",
-  4: "bg-red-50 border-red-400 text-red-900",
+  4: "bg-indigo-50 border-indigo-400 text-indigo-900",
 };
 
 const RELATION_STYLES = {
@@ -54,9 +54,11 @@ const RELATION_STYLES = {
 
 const NODE_W = 280;
 const NODE_H = 110;
-const COL_GAP = 40;
-const ROW_GAP = 24;
-const COL_X = {
+const COL_GAP = 220;
+const ROW_GAP = 140;
+const BAND_X_CLAMP = 60;
+const Y_JITTER = 10;
+const BAND_CENTER = {
   0: 0,
   1: NODE_W + COL_GAP,
   2: 2 * (NODE_W + COL_GAP),
@@ -72,25 +74,37 @@ function StatementNode({ data }) {
   const layerClass = LAYER_CLASSES[data.layer] || "bg-white border-gray-400";
   const layerName = LAYER_NAMES[data.layer] || `L${data.layer}`;
   const isSelected = data._isSelected;
+  const isFaded = data._hasSelection && !data._inUpstream;
   const selectedClass = isSelected
     ? "ring-2 ring-blue-500 ring-offset-1"
     : "";
+  const fadeClass = isFaded ? "opacity-25" : "";
 
   return html`
     <div
-      class="rounded border-2 ${layerClass} shadow-sm p-3 ${selectedClass} relative"
-      style=${{ width: NODE_W }}
+      class="rounded border-2 ${layerClass} shadow-sm p-3 ${selectedClass} ${fadeClass} relative transition-opacity"
+      style=${{ width: NODE_W, minHeight: NODE_H }}
     >
-      <${Handle}
-        type="target"
-        position=${Position.Left}
-        style=${{ opacity: 0, background: "transparent", border: "none" }}
-      />
-      <${Handle}
-        type="source"
-        position=${Position.Right}
-        style=${{ opacity: 0, background: "transparent", border: "none" }}
-      />
+      <${Handle} id="L-t" type="target" position=${Position.Left}
+        style=${{ top: "20%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="L-m" type="target" position=${Position.Left}
+        style=${{ top: "50%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="L-b" type="target" position=${Position.Left}
+        style=${{ top: "80%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="R-t" type="source" position=${Position.Right}
+        style=${{ top: "20%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="R-m" type="source" position=${Position.Right}
+        style=${{ top: "50%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="R-b" type="source" position=${Position.Right}
+        style=${{ top: "80%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="T-s" type="source" position=${Position.Top}
+        style=${{ left: "30%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="T-t" type="target" position=${Position.Top}
+        style=${{ left: "70%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="B-s" type="source" position=${Position.Bottom}
+        style=${{ left: "30%", opacity: 0, background: "transparent", border: "none" }} />
+      <${Handle} id="B-t" type="target" position=${Position.Bottom}
+        style=${{ left: "70%", opacity: 0, background: "transparent", border: "none" }} />
       <div class="text-[10px] uppercase tracking-wide opacity-70 mb-1">
         ${layerName} · ${data.id}
       </div>
@@ -120,15 +134,21 @@ function StatementNode({ data }) {
 const NODE_TYPES = { statement: StatementNode };
 
 // =====================================================
-// Layout: layer-as-column pyramid (L0 left → L4 right)
+// Layout: soft layer bands (L0 left → L4 right)
 // =====================================================
 
-// Each layer becomes a vertical column. X is fixed by layer; Y is computed
-// per column with a barycentric pass to reduce edge crossings: nodes in
-// column N are sorted by the average Y of their neighbors in column N-1.
-// `edges` here are the renderer-flipped edges (source = visual-left node,
-// target = visual-right node), so each node's left-neighbors are the
-// sources of incoming edges.
+// Pass 1: barycentric Y per band, with deterministic small Y-jitter so
+// equally-stacked rows across bands don't all align on the same horizontal.
+// Pass 2: connection-pulled X — each card drifts horizontally toward the
+// average X of its connected neighbors, clamped to ±BAND_X_CLAMP from the
+// band center. `edges` here are the renderer's visual edges (source =
+// visual-left, target = visual-right after layer-aware flipping in App).
+function hashFloat(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h * 31) + s.charCodeAt(i)) | 0;
+  return ((h % 1000) + 1000) % 1000 / 1000;
+}
+
 function applyLayout(nodes, edges) {
   const byLayer = { 0: [], 1: [], 2: [], 3: [], 4: [] };
   for (const n of nodes) {
@@ -138,7 +158,6 @@ function applyLayout(nodes, edges) {
 
   const yCenterById = new Map();
   const positioned = [];
-
   const stride = NODE_H + ROW_GAP;
 
   for (const layer of [0, 1, 2, 3, 4]) {
@@ -162,25 +181,116 @@ function applyLayout(nodes, edges) {
     const totalHeight = group.length * stride - ROW_GAP;
     const startY = -totalHeight / 2;
     group.forEach((n, i) => {
-      const y = startY + i * stride;
+      const yJit = (hashFloat(n.id) * 2 - 1) * Y_JITTER;
+      const y = startY + i * stride + yJit;
       yCenterById.set(n.id, y + NODE_H / 2);
       positioned.push({
         ...n,
-        position: { x: COL_X[layer], y },
+        position: { x: BAND_CENTER[layer], y },
       });
     });
   }
 
+  // Pass 2: connection-pull X within band.
+  const xById = new Map(positioned.map((n) => [n.id, n.position.x]));
+  const neighborsById = new Map();
+  for (const n of positioned) neighborsById.set(n.id, []);
+  for (const e of edges) {
+    if (neighborsById.has(e.source) && neighborsById.has(e.target)) {
+      neighborsById.get(e.source).push(e.target);
+      neighborsById.get(e.target).push(e.source);
+    }
+  }
+
+  for (const n of positioned) {
+    const neighbors = neighborsById.get(n.id);
+    if (!neighbors || neighbors.length === 0) continue;
+    const avgNeighborX =
+      neighbors.reduce((sum, id) => sum + (xById.get(id) ?? 0), 0) /
+      neighbors.length;
+    const center = BAND_CENTER[n.data.layer];
+    const dx = avgNeighborX - center;
+    const offset = Math.max(-BAND_X_CLAMP, Math.min(BAND_X_CLAMP, dx * 0.4));
+    n.position = { x: center + offset, y: n.position.y };
+  }
+
   return positioned;
+}
+
+// Statements reachable from `startId` by following outgoing data edges:
+// the cards `startId` builds on, transitively. Used to highlight upstream
+// chain when a card is selected.
+function upstreamFrom(startId, dataEdges) {
+  const reached = new Set([startId]);
+  const queue = [startId];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const e of dataEdges) {
+      if (e.source === cur && !reached.has(e.target)) {
+        reached.add(e.target);
+        queue.push(e.target);
+      }
+    }
+  }
+  return reached;
 }
 
 // =====================================================
 // Side panel: full statement view (read-only)
 // =====================================================
 
-function SidePanel({ statement, onClose }) {
+function groupByRelation(edges) {
+  const groups = new Map();
+  for (const e of edges) {
+    if (!groups.has(e.relation)) groups.set(e.relation, []);
+    groups.get(e.relation).push(e);
+  }
+  return groups;
+}
+
+function ManifestSection({ title, groups, side, statementById, onSelectId }) {
+  if (groups.size === 0) return null;
+  return html`
+    <div class="mt-4">
+      <div class="text-xs font-semibold uppercase text-gray-500 mb-1">
+        ${title}
+      </div>
+      ${[...groups.entries()].map(
+        ([relation, list]) => html`
+          <div key=${relation} class="text-sm mb-1">
+            <span class="text-gray-500">${relation}:</span>
+            ${list.map((e, i) => {
+              const otherId = side === "out" ? e.target : e.source;
+              const other = statementById.get(otherId);
+              const layerClass =
+                LAYER_CLASSES[other?.layer] || "bg-gray-100";
+              const parts = layerClass.split(" ");
+              return html`
+                <button
+                  key=${otherId + i}
+                  type="button"
+                  onClick=${() => onSelectId(otherId)}
+                  title=${other?.text ?? otherId}
+                  class="inline-block ml-1 mb-1 px-2 py-0.5 rounded border ${parts[0]} ${parts[1]} ${parts[2]} text-xs hover:opacity-80"
+                >
+                  ${otherId}
+                </button>
+              `;
+            })}
+          </div>
+        `,
+      )}
+    </div>
+  `;
+}
+
+function SidePanel({ statement, edges, statementById, onSelectId, onClose }) {
   if (!statement) return null;
   const layerName = LAYER_NAMES[statement.layer] || `L${statement.layer}`;
+  const outgoing = edges.filter((e) => e.source === statement.id);
+  const incoming = edges.filter((e) => e.target === statement.id);
+  const buildsOn = groupByRelation(outgoing);
+  const usedBy = groupByRelation(incoming);
 
   return html`
     <div class="absolute top-0 right-0 bottom-0 w-96 bg-white border-l shadow-lg overflow-y-auto z-10">
@@ -292,6 +402,21 @@ function SidePanel({ statement, onClose }) {
             )}
           </div>
         `}
+
+        <${ManifestSection}
+          title="Builds on"
+          groups=${buildsOn}
+          side="out"
+          statementById=${statementById}
+          onSelectId=${onSelectId}
+        />
+        <${ManifestSection}
+          title="Used by"
+          groups=${usedBy}
+          side="in"
+          statementById=${statementById}
+          onSelectId=${onSelectId}
+        />
       </div>
     </div>
   `;
@@ -301,7 +426,25 @@ function SidePanel({ statement, onClose }) {
 // Legend
 // =====================================================
 
-function Legend() {
+function RelationLine({ relation }) {
+  const s = RELATION_STYLES[relation] || { stroke: "#6b7280", strokeWidth: 1.5 };
+  return html`
+    <svg width="32" height="6" viewBox="0 0 32 6">
+      <line
+        x1="0"
+        y1="3"
+        x2="28"
+        y2="3"
+        stroke=${s.stroke}
+        stroke-width=${s.strokeWidth}
+        stroke-dasharray=${s.strokeDasharray || ""}
+      />
+      <polygon points="32,3 27,1 27,5" fill=${s.stroke} />
+    </svg>
+  `;
+}
+
+function Legend({ hasMutual }) {
   return html`
     <div class="bg-white p-3 rounded shadow border border-gray-200 text-xs space-y-1.5">
       <div class="font-semibold mb-1.5">Layers</div>
@@ -314,6 +457,23 @@ function Legend() {
           </div>
         `;
       })}
+      <div class="border-t my-2"></div>
+      <div class="font-semibold mb-1.5">Connections</div>
+      ${["supports", "evidence", "qualifies", "attacks"].map(
+        (rel) => html`
+          <div key=${rel} class="flex items-center gap-2">
+            <${RelationLine} relation=${rel} />
+            <span>${rel}</span>
+          </div>
+        `,
+      )}
+      ${hasMutual &&
+      html`
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-8 text-center">↔</span>
+          <span class="text-gray-600">mutual (both directions)</span>
+        </div>
+      `}
     </div>
   `;
 }
@@ -337,52 +497,156 @@ function App() {
       .catch((e) => setError(e.message));
   }, []);
 
+  const statementById = useMemo(() => {
+    if (!graph) return new Map();
+    return new Map(graph.statements.map((s) => [s.id, s]));
+  }, [graph]);
+
+  const upstreamSet = useMemo(() => {
+    if (!graph || !selectedId) return null;
+    return upstreamFrom(selectedId, graph.edges);
+  }, [graph, selectedId]);
+
+  const renderableEdges = useMemo(() => {
+    if (!graph) return [];
+    const seen = new Set();
+    const out = [];
+    for (const e of graph.edges) {
+      const key = [e.source, e.target].sort().join("::");
+      if (seen.has(key)) continue;
+      const inverse = graph.edges.find(
+        (x) => x.source === e.target && x.target === e.source,
+      );
+      if (inverse) {
+        out.push({
+          source: e.source,
+          target: e.target,
+          relation: e.relation,
+          inverseRelation: inverse.relation,
+          mutual: true,
+        });
+        seen.add(key);
+      } else {
+        out.push({
+          source: e.source,
+          target: e.target,
+          relation: e.relation,
+          mutual: false,
+        });
+      }
+    }
+    return out;
+  }, [graph]);
+
+  const hasMutual = useMemo(
+    () => renderableEdges.some((e) => e.mutual),
+    [renderableEdges],
+  );
+
   const { nodes, edges } = useMemo(() => {
     if (!graph) return { nodes: [], edges: [] };
 
-    const initialNodes = graph.statements.map((s) => ({
-      id: s.id,
-      type: "statement",
-      data: {
-        ...s,
-        _isSelected: s.id === selectedId,
-      },
-      position: { x: 0, y: 0 },
-    }));
+    const initialNodes = graph.statements.map((s) => {
+      const inUpstream = upstreamSet ? upstreamSet.has(s.id) : true;
+      return {
+        id: s.id,
+        type: "statement",
+        data: {
+          ...s,
+          _isSelected: s.id === selectedId,
+          _inUpstream: inUpstream,
+          _hasSelection: !!upstreamSet,
+        },
+        position: { x: 0, y: 0 },
+      };
+    });
 
-    // Flip edge direction so arrows point left → right (premise → conclusion).
-    // The data still says "policy supports its premises" — only the visual
-    // is reversed.
-    const initialEdges = graph.edges.map((e, i) => {
+    const visualEdges = renderableEdges.map((e, i) => {
+      const sLayer = statementById.get(e.source)?.layer ?? 0;
+      const tLayer = statementById.get(e.target)?.layer ?? 0;
+      // Visual flow: lower layer on the left. Flip only when data goes
+      // high → low (the common case: policy supports its premises).
+      const flip = sLayer > tLayer;
+      const visualSource = flip ? e.target : e.source;
+      const visualTarget = flip ? e.source : e.target;
       const baseStyle = RELATION_STYLES[e.relation] || {
         stroke: "#6b7280",
         strokeWidth: 1.5,
       };
+      const inUpstream = upstreamSet
+        ? upstreamSet.has(e.source) && upstreamSet.has(e.target)
+        : true;
+      const opacity = upstreamSet ? (inUpstream ? 1 : 0.15) : 1;
+      const marker = {
+        type: MarkerType.ArrowClosed,
+        color: baseStyle.stroke,
+        width: 18,
+        height: 18,
+      };
+      const label = e.mutual ? `${e.relation} ↔` : e.relation;
       return {
         id: `${e.source}->${e.target}-${i}`,
-        source: e.target,
-        target: e.source,
+        source: visualSource,
+        target: visualTarget,
+        _sameBand: sLayer === tLayer,
         type: "smoothstep",
-        label: e.relation,
-        style: baseStyle,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: baseStyle.stroke,
-          width: 16,
-          height: 16,
-        },
-        labelStyle: { fontSize: 10, fill: "#374151" },
-        labelBgStyle: { fill: "white", fillOpacity: 0.9 },
+        pathOptions: { offset: 24, borderRadius: 12 },
+        label,
+        style: { ...baseStyle, opacity },
+        markerEnd: marker,
+        markerStart: e.mutual ? marker : undefined,
+        labelStyle: { fontSize: 10, fill: "#374151", opacity },
+        labelBgStyle: { fill: "white", fillOpacity: 0.9 * opacity },
         labelBgPadding: [4, 2],
         labelBgBorderRadius: 2,
       };
     });
 
-    return {
-      nodes: applyLayout(initialNodes, initialEdges),
-      edges: initialEdges,
-    };
-  }, [graph, selectedId]);
+    const positionedNodes = applyLayout(initialNodes, visualEdges);
+    const posById = new Map(
+      positionedNodes.map((n) => [n.id, n.position]),
+    );
+
+    // Pass 2: assign handles per edge based on resulting layout. Distributes
+    // arrowheads across top/mid/bottom of card edges so multiple edges into
+    // a busy card don't stack on one point.
+    const edgesWithHandles = visualEdges.map((e) => {
+      const sPos = posById.get(e.source);
+      const tPos = posById.get(e.target);
+      if (!sPos || !tPos) return e;
+      const sCy = sPos.y + NODE_H / 2;
+      const tCy = tPos.y + NODE_H / 2;
+      const dy = tCy - sCy;
+      let sourceHandle, targetHandle;
+      if (e._sameBand) {
+        // Same column: route vertically through top/bottom handles.
+        if (dy >= 0) {
+          sourceHandle = "B-s";
+          targetHandle = "T-t";
+        } else {
+          sourceHandle = "T-s";
+          targetHandle = "B-t";
+        }
+      } else {
+        // Cross-band: route through left/right with vertical bias.
+        const Y_THRESHOLD = NODE_H * 0.6;
+        if (dy > Y_THRESHOLD) {
+          sourceHandle = "R-b";
+          targetHandle = "L-t";
+        } else if (dy < -Y_THRESHOLD) {
+          sourceHandle = "R-t";
+          targetHandle = "L-b";
+        } else {
+          sourceHandle = "R-m";
+          targetHandle = "L-m";
+        }
+      }
+      const { _sameBand, ...rest } = e;
+      return { ...rest, sourceHandle, targetHandle };
+    });
+
+    return { nodes: positionedNodes, edges: edgesWithHandles };
+  }, [graph, selectedId, upstreamSet, renderableEdges, statementById]);
 
   const selectedStatement = useMemo(() => {
     if (!graph || !selectedId) return null;
@@ -452,11 +716,14 @@ function App() {
         </div>
       <//>
       <${Panel} position="bottom-left">
-        <${Legend} />
+        <${Legend} hasMutual=${hasMutual} />
       <//>
     <//>
     <${SidePanel}
       statement=${selectedStatement}
+      edges=${graph.edges}
+      statementById=${statementById}
+      onSelectId=${setSelectedId}
       onClose=${() => setSelectedId(null)}
     />
   `;

@@ -1,3 +1,5 @@
+"""Public API for the common_ground argument-graph toolkit."""
+
 from common_ground.model import (
     DataRef,
     Edge,
